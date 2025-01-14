@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\TestController;
+use App\Http\Controllers\AppController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [TestController::class, 'show'])->name('home');
+Route::get('/', [AppController::class, 'show'])->name('home');

@@ -1,5 +1,7 @@
 <script setup>
-import Calendar from "./Calendar.vue";
+import Calendar from "../Components/Calendar.vue";
+import DailyDetailedView from "../Components/DailyDetailedView.vue";
+import {ref} from 'vue';
 
 const props = defineProps({
     currentMonth: {
@@ -11,6 +13,17 @@ const props = defineProps({
         required: true,
     },
 });
+
+const selectedDate = ref(null);
+const events = ref([]);
+
+function handleDateSelected(date) {
+    selectedDate.value = date;
+}
+
+function updateEvents(newEvents) {
+    events.value = newEvents;
+}
 </script>
 
 <template>
@@ -24,12 +37,17 @@ const props = defineProps({
                 <div class="bg-gray-200 h-96">Hi</div>
             </div>
 
-            <Calendar :currentMonth="currentMonth"/>
+            <Calendar
+                :currentMonth="currentMonth"
+                :events="events"
+                @date-selected="handleDateSelected"
+            />
 
-            <div class="text-center col-span-3 bg-green-100">
-                <p class="text-2xl">Daily Detailed View</p>
-                <div class="bg-gray-200 h-96">Hi</div>
-            </div>
+            <DailyDetailedView
+                :events="events"
+                :selected-date="selectedDate"
+                @update:events="updateEvents"
+            />
         </div>
         <div class="container mx-auto text-center h-40 bg-orange-100">
             <div class="my-4">
