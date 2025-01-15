@@ -3,6 +3,7 @@
         <div class="flex justify-between items-center mb-4">
             <button class="p-2" @click="previousMonth">&lt;</button>
             <h2 class="text-xl font-semibold">{{ currentMonthName }} {{ currentYear }}</h2>
+            <button class="p-2" @click="resetToToday">Today</button>
             <button class="p-2" @click="nextMonth">&gt;</button>
         </div>
 
@@ -149,6 +150,13 @@ function getDayEvents(date) {
         const eventDate = new Date(event.start);
         return eventDate.toDateString() === date.toDateString();
     });
+}
+
+function resetToToday() {
+    //if selected month is not the current month, reset to current month
+    if (currentDate.value?.toDateString() !== isToday(currentDate.value)) {
+        currentDate.value = new Date();
+    }
 }
 
 // Click handler
