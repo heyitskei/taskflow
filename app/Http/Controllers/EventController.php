@@ -12,7 +12,11 @@ class EventController extends Controller
      */
     public function index()
     {
-        //
+        // TODO:
+        // validate and save on save click
+        // route for endpoint to hit, redirect back
+        // then on refresh, fetch
+
     }
 
     /**

@@ -24,19 +24,21 @@
                     'bg-blue-50': isSelectedDate(day.date),
                     'font-bold': isToday(day.date)
                 }"
-                class="aspect-square p-2 border rounded-lg cursor-pointer hover:bg-gray-50 relative"
+                class="min-h-[100px] p-2 border rounded-lg cursor-pointer hover:bg-gray-50 relative flex flex-col"
                 @click="handleDayClick(day)"
             >
-                <span>{{ day.dayOfMonth }}</span>
-                <!-- Event indicators -->
-                <div class="absolute bottom-1 left-1 right-1 flex gap-1">
+                <span class="text-sm mb-1">{{ day.dayOfMonth }}</span>
+                <!-- Event list -->
+                <div class="flex-1 overflow-y-auto">
                     <div
                         v-for="event in getDayEvents(day.date)"
                         :key="event.id"
                         :style="{ backgroundColor: event.color || 'blue' }"
+                        class="text-xs p-1 mb-1 rounded text-white truncate"
                         :title="event.title"
-                        class="w-2 h-2 rounded-full"
-                    ></div>
+                    >
+                        {{ event.title }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -163,7 +165,29 @@ function resetToToday() {
 function handleDayClick(day) {
     console.log('Day clicked:', day.date);
     selectedDate.value = day.date;
+
+    // If clicking a day from previous or next month, switch to that month
+    if (!day.isCurrentMonth) {
+        currentDate.value = new Date(
+            day.date.getFullYear(),
+            day.date.getMonth(),
+            1
+        );
+    }
+
     emit('date-selected', day.date);
 }
 </script>
+
+<style scoped>
+/* Hide scrollbar but keep functionality */
+.overflow-y-auto {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+</style>
 
