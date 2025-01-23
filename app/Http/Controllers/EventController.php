@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -10,13 +11,10 @@ class EventController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(): JsonResponse
     {
-        // TODO:
-        // validate and save on save click
-        // route for endpoint to hit, redirect back
-        // then on refresh, fetch
-
+        $events = Event::all();
+        return response()->json($events);
     }
 
     /**
@@ -30,17 +28,24 @@ class EventController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string',
+            'start_datetime' => 'required|date',
+            'end_datetime' => 'required|date|after:start_datetime',
+        ]);
+
+        $event = Event::create($validated);
+        return response()->json($event, 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Event $event)
+    public function show(Event $event): JsonResponse
     {
-        //
+        return response()->json($event);
     }
 
     /**
@@ -54,16 +59,24 @@ class EventController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Event $event)
+    public function update(Request $request, Event $event): JsonResponse
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string',
+            'start_datetime' => 'required|date',
+            'end_datetime' => 'required|date|after:start_datetime',
+        ]);
+
+        $event->update($validated);
+        return response()->json($event);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Event $event)
+    public function destroy(Event $event): JsonResponse
     {
-        //
+        $event->delete();
+        return response()->json(null, 204);
     }
 }

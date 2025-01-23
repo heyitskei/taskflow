@@ -102,7 +102,11 @@
 </template>
 
 <script setup>
-import {computed, ref} from 'vue';
+import {computed, onMounted, ref} from 'vue';
+import axios from 'axios';
+
+// Add CSRF token to all requests
+axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 const props = defineProps({
     selectedDate: {
@@ -175,25 +179,77 @@ function saveEvent() {
 
     const startDate = new Date(eventDate);
     startDate.setHours(parseInt(startHours), parseInt(startMinutes));
+    startDate.setSeconds(0);
+    startDate.setMilliseconds(0);
 
     const endDate = new Date(eventDate);
     endDate.setHours(parseInt(endHours), parseInt(endMinutes));
+    endDate.setSeconds(0);
+    endDate.setMilliseconds(0);
 
-    const event = {
-        id: Date.now(),
+    // Ensure end date is after start date
+    if (endDate <= startDate) {
+        console.error('End time must be after start time');
+        return;
+    }
+
+    const eventData = {
         title: newEvent.value.title,
-        start: startDate,
-        end: endDate,
-        color: '#3B82F6'
+        start_datetime: startDate.toISOString().slice(0, 19).replace('T', ' '),
+        end_datetime: endDate.toISOString().slice(0, 19).replace('T', ' '),
     };
 
-    const updatedEvents = [...props.events, event];
-    emit('update:events', updatedEvents);
-    isEditing.value = false;
+    // Send POST request to create event
+    axios.post('/events', eventData)
+        .then(response => {
+            const event = {
+                id: response.data.id,
+                title: response.data.title,
+                start: new Date(response.data.start_datetime),
+                end: new Date(response.data.end_datetime),
+                color: '#3B82F6'
+            };
+            const updatedEvents = [...props.events, event];
+            emit('update:events', updatedEvents);
+            isEditing.value = false;
+        })
+        .catch(error => {
+            console.error('Error creating event:', error);
+            console.error('Validation errors:', error.response?.data?.errors);
+            console.error('Event data sent:', eventData);
+            // TODO: Add error handling UI
+        });
 }
 
 function deleteEvent(event) {
-    const updatedEvents = props.events.filter(e => e.id !== event.id);
-    emit('update:events', updatedEvents);
+    // Send DELETE request to remove event
+    axios.delete(`/events/${event.id}`)
+        .then(() => {
+            const updatedEvents = props.events.filter(e => e.id !== event.id);
+            emit('update:events', updatedEvents);
+        })
+        .catch(error => {
+            console.error('Error deleting event:', error);
+            // TODO: Add error handling UI
+        });
 }
+
+onMounted(() => {
+    // Fetch events when component mounts
+    axios.get('/events')
+        .then(response => {
+            const events = response.data.map(event => ({
+                id: event.id,
+                title: event.title,
+                start: new Date(event.start_datetime),
+                end: new Date(event.end_datetime),
+                color: '#3B82F6'
+            }));
+            emit('update:events', events);
+        })
+        .catch(error => {
+            console.error('Error fetching events:', error);
+            // TODO: Add error handling UI
+        });
+});
 </script>

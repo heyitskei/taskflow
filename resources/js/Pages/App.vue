@@ -43,36 +43,31 @@ function updateEvents(newEvents) {
             <!-- Main Content -->
             <div class="flex-1 grid grid-cols-12 gap-6 min-h-0">
                 <!-- Left Column -->
-                <div class="col-span-3 flex flex-col gap-6 min-h-0">
-                    <!-- News Digest -->
-                    <div class="flex-1 min-h-0">
-                        <DailyNewsDigest/>
-                    </div>
-
-                    <!-- AI Chat -->
-                    <div class="flex-1 min-h-0">
-                        <AiChat/>
-                    </div>
+                <div class="col-span-3 min-h-0">
+                    <DailyNewsDigest class="h-full"/>
                 </div>
 
-                <!-- Calendar -->
+                <!-- Center Column -->
                 <div class="col-span-6 min-h-0">
                     <Calendar
-                        :currentMonth="currentMonth"
-                        :events="events"
+                        v-model:events="events"
+                        v-model:selected-date="selectedDate"
                         class="h-full"
-                        @date-selected="handleDateSelected"
                     />
                 </div>
 
-                <!-- Daily Detailed View -->
-                <div class="col-span-3 min-h-0">
-                    <DailyDetailedView
-                        :events="events"
-                        :selected-date="selectedDate"
-                        class="h-full"
-                        @update:events="updateEvents"
-                    />
+                <!-- Right Column -->
+                <div class="col-span-3 flex flex-col gap-6 min-h-0">
+                    <div class="flex-[2] min-h-0">
+                        <DailyDetailedView
+                            v-model:events="events"
+                            :selected-date="selectedDate"
+                            class="h-full"
+                        />
+                    </div>
+                    <div class="flex-1 min-h-0">
+                        <AiChat class="h-full"/>
+                    </div>
                 </div>
             </div>
         </div>
