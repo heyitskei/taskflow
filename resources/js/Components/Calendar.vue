@@ -105,9 +105,10 @@
 import {computed, ref} from 'vue';
 
 const props = defineProps({
-    currentMonth: {
-        type: String,
-        required: true,
+    selected_date: {
+        type: Date,
+        required: false,
+        default: null
     },
     events: {
         type: Array,
@@ -116,11 +117,14 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['date-selected', 'update:events']);
+const emit = defineEmits(['update:events', 'update:selected-date']);
 
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const currentDate = ref(new Date());
-const selectedDate = ref(null);
+const selectedDate = computed({
+    get: () => props.selected_date,
+    set: (value) => emit('update:selected-date', value)
+});
 
 // Computed properties
 const currentMonthName = computed(() => {
@@ -211,7 +215,6 @@ function nextMonth() {
 function resetToToday() {
     currentDate.value = new Date();
     selectedDate.value = currentDate.value;
-    emit('date-selected', currentDate.value);
 }
 
 function handleDayClick(day) {
@@ -224,8 +227,6 @@ function handleDayClick(day) {
             1
         );
     }
-
-    emit('date-selected', day.date);
 }
 </script>
 

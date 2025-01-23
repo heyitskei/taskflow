@@ -5,18 +5,7 @@ import DailyNewsDigest from "../Components/DailyNewsDigest.vue";
 import AiChat from "../Components/AiChat.vue";
 import {ref} from 'vue';
 
-const props = defineProps({
-    currentMonth: {
-        type: String,
-        required: true,
-    },
-    daysInMonth: {
-        type: Number,
-        required: true,
-    },
-});
-
-const selectedDate = ref(null);
+const selectedDate = ref(new Date());
 const events = ref([]);
 
 function handleDateSelected(date) {
@@ -44,28 +33,28 @@ function updateEvents(newEvents) {
             <div class="flex-1 grid grid-cols-12 gap-6 min-h-0">
                 <!-- Left Column -->
                 <div class="col-span-3 min-h-0">
-                    <DailyNewsDigest class="h-full"/>
+                    <DailyNewsDigest class="h-full overflow-auto"/>
                 </div>
 
                 <!-- Center Column -->
                 <div class="col-span-6 min-h-0">
                     <Calendar
-                        v-model:events="events"
                         v-model:selected-date="selectedDate"
+                        v-model:events="events"
                         class="h-full"
                     />
                 </div>
 
                 <!-- Right Column -->
                 <div class="col-span-3 flex flex-col gap-6 min-h-0">
-                    <div class="flex-[2] min-h-0">
+                    <div class="flex-[2] min-h-0 overflow-auto">
                         <DailyDetailedView
                             v-model:events="events"
                             :selected-date="selectedDate"
                             class="h-full"
                         />
                     </div>
-                    <div class="flex-1 min-h-0">
+                    <div class="flex-1 min-h-0 overflow-auto">
                         <AiChat class="h-full"/>
                     </div>
                 </div>
