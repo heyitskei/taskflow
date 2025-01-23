@@ -1,6 +1,8 @@
 <script setup>
 import Calendar from "../Components/Calendar.vue";
 import DailyDetailedView from "../Components/DailyDetailedView.vue";
+import DailyNewsDigest from "../Components/DailyNewsDigest.vue";
+import AiChat from "../Components/AiChat.vue";
 import {ref} from 'vue';
 
 const props = defineProps({
@@ -18,6 +20,7 @@ const selectedDate = ref(null);
 const events = ref([]);
 
 function handleDateSelected(date) {
+    console.log('Date selected in App:', date);
     selectedDate.value = date;
 }
 
@@ -27,36 +30,50 @@ function updateEvents(newEvents) {
 </script>
 
 <template>
-    <div class="flex flex-col">
-        <div>
-            <p class="text-center mb-10 text-3xl">TaskFlow</p>
-        </div>
-        <div class="grid grid-cols-12 gap-4">
-            <div class="text-center col-span-3 bg-gray-100">
-                <p class="text-2xl">Daily News Digest</p>
-                <div class="bg-gray-200 h-96">Hi</div>
+    <div class="h-screen bg-gray-50 p-6">
+        <div class="h-full max-w-[1920px] mx-auto flex flex-col">
+            <!-- Header -->
+            <div class="mb-4 text-center">
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    TaskFlow
+                </h1>
+                <p class="text-sm text-gray-600">Your AI-Powered Productivity Assistant</p>
             </div>
 
-            <Calendar
-                :currentMonth="currentMonth"
-                :events="events"
-                @date-selected="handleDateSelected"
-            />
+            <!-- Main Content -->
+            <div class="flex-1 grid grid-cols-12 gap-6 min-h-0">
+                <!-- Left Column -->
+                <div class="col-span-3 flex flex-col gap-6 min-h-0">
+                    <!-- News Digest -->
+                    <div class="flex-1 min-h-0">
+                        <DailyNewsDigest/>
+                    </div>
 
-            <DailyDetailedView
-                :events="events"
-                :selected-date="selectedDate"
-                @update:events="updateEvents"
-            />
-        </div>
-        <div class="container mx-auto text-center h-40 bg-orange-100">
-            <div class="my-4">
-                <textarea class="w-2/3" placeholder="AI Reply..."></textarea>
-            </div>
+                    <!-- AI Chat -->
+                    <div class="flex-1 min-h-0">
+                        <AiChat/>
+                    </div>
+                </div>
 
-            <div class="my-4">
-                <input class="align-bottom" placeholder="Here is your AI" type="text"/>
-                <button class="align-bottom" type="submit">Enter</button>
+                <!-- Calendar -->
+                <div class="col-span-6 min-h-0">
+                    <Calendar
+                        :currentMonth="currentMonth"
+                        :events="events"
+                        class="h-full"
+                        @date-selected="handleDateSelected"
+                    />
+                </div>
+
+                <!-- Daily Detailed View -->
+                <div class="col-span-3 min-h-0">
+                    <DailyDetailedView
+                        :events="events"
+                        :selected-date="selectedDate"
+                        class="h-full"
+                        @update:events="updateEvents"
+                    />
+                </div>
             </div>
         </div>
     </div>
