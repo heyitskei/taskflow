@@ -57,6 +57,8 @@
                         isToday(day.date) && !isSelectedDate(day.date) && 'ring-1 ring-blue-200'
                     ]"
                     @click="handleDayClick(day)"
+                    @dragover.prevent
+                    @drop.prevent="handleDrop($event, day.date)"
                 >
                     <!-- Day Header -->
                     <div class="flex items-center justify-between mb-1">
@@ -83,7 +85,9 @@
                                 v-if="index < 2"
                                 :style="{ backgroundColor: event.color || '#3B82F6' }"
                                 :title="event.title"
-                                class="text-xs px-2 py-1 rounded text-white truncate"
+                                class="text-xs px-2 py-1 rounded text-white truncate cursor-move"
+                                draggable="true"
+                                @dragstart="handleDragStart($event, event)"
                             >
                                 {{ event.title }}
                             </div>
@@ -103,6 +107,7 @@
 
 <script setup>
 import {computed, ref} from 'vue';
+import axios from 'axios';
 
 const props = defineProps({
     selected_date: {
@@ -125,6 +130,53 @@ const selectedDate = computed({
     get: () => props.selected_date,
     set: (value) => emit('update:selected-date', value)
 });
+
+// Drag and drop functionality
+function handleDragStart(event, calendarEvent) {
+    event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent));
+    event.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDrop(event, targetDate) {
+    const draggedEvent = JSON.parse(event.dataTransfer.getData('text/plain'));
+    const eventDate = new Date(draggedEvent.start);
+    const timeDiff = eventDate.getTime() - new Date(eventDate.toDateString()).getTime();
+
+    // Create new dates preserving the time
+    const newStartDate = new Date(targetDate);
+    newStartDate.setTime(newStartDate.getTime() + timeDiff);
+
+    const newEndDate = new Date(newStartDate);
+    const duration = new Date(draggedEvent.end).getTime() - new Date(draggedEvent.start).getTime();
+    newEndDate.setTime(newEndDate.getTime() + duration);
+
+    // Update event in the database
+    const eventData = {
+        title: draggedEvent.title,
+        start_datetime: newStartDate.toISOString().slice(0, 19).replace('T', ' '),
+        end_datetime: newEndDate.toISOString().slice(0, 19).replace('T', ' '),
+    };
+
+    axios.put(`/events/${draggedEvent.id}`, eventData)
+        .then(response => {
+            // Update local events
+            const updatedEvents = props.events.map(event => {
+                if (event.id === draggedEvent.id) {
+                    return {
+                        ...event,
+                        start: newStartDate,
+                        end: newEndDate
+                    };
+                }
+                return event;
+            });
+            emit('update:events', updatedEvents);
+        })
+        .catch(error => {
+            console.error('Error updating event:', error);
+            // TODO: Add error handling UI
+        });
+}
 
 // Computed properties
 const currentMonthName = computed(() => {
@@ -265,6 +317,16 @@ function handleDayClick(day) {
 
 .hover\:animate-bounce:hover {
     animation: subtle-bounce 0.3s ease;
+}
+
+/* Add drag and drop styles */
+[draggable="true"] {
+    cursor: move;
+    user-select: none;
+}
+
+[draggable="true"]:hover {
+    opacity: 0.8;
 }
 </style>
 
