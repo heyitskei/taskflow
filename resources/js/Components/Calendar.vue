@@ -11,7 +11,7 @@
 
             <div class="flex flex-col items-center">
                 <h2 class="text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    {{ currentMonthName }}
+                    {{ monthName }}
                 </h2>
                 <span class="text-sm text-gray-500 mt-0.5">{{ currentYear }}</span>
             </div>
@@ -69,7 +69,7 @@
                                 isToday(day.date) ? 'bg-blue-600 text-white' : 'text-gray-700'
                             ]"
                         >
-                            {{ day.dayOfMonth }}
+                            {{ day.date.getDate() }}
                         </span>
                         <div
                             v-if="getDayEvents(day.date).length > 0"
@@ -109,197 +109,73 @@
 
 <script setup>
 import {computed, ref} from 'vue';
-import axios from 'axios';
+import {updateEvent} from '../services/eventService';
+import {toLocalDate, toUTCString} from '../utils/dateTime';
 
 const props = defineProps({
-    selected_date: {
-        type: Date,
-        required: false,
-        default: null
-    },
     events: {
         type: Array,
         required: true,
         default: () => []
+    },
+    selectedDate: {
+        type: Date,
+        required: true
     }
 });
 
-const emit = defineEmits(['update:events', 'update:selected-date']);
+const emit = defineEmits(['update:selectedDate', 'update:events']);
 
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const currentDate = ref(new Date());
-const selectedDate = computed({
-    get: () => props.selected_date,
-    set: (value) => emit('update:selected-date', value)
-});
+const currentMonth = ref(props.selectedDate.getMonth());
+const currentYear = ref(props.selectedDate.getFullYear());
 
-// Drag and drop state
-const isDragging = ref(false);
-const draggedEvent = ref(null);
-
-function handleDragStart(event, calendarEvent) {
-    isDragging.value = true;
-    draggedEvent.value = calendarEvent;
-    event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent));
-    event.dataTransfer.effectAllowed = 'move';
-
-    // Add dragging class to the element
-    event.target.classList.add('dragging');
-}
-
-function handleDragEnd(event) {
-    isDragging.value = false;
-    draggedEvent.value = null;
-    event.target.classList.remove('dragging');
-}
-
-function handleDragOver(event, date) {
-    event.preventDefault();
-    if (isDragging.value) {
-        event.currentTarget.classList.add('drag-over');
-    }
-}
-
-function handleDragLeave(event) {
-    event.currentTarget.classList.remove('drag-over');
-}
-
-function toLocalDate(utcDateString) {
-    if (!utcDateString) return null;
-    // Parse the UTC date string and create a local date
-    const [datePart, timePart] = utcDateString.split(' ');
-    const [year, month, day] = datePart.split('-');
-    const [hours, minutes, seconds] = timePart.split(':');
-
-    const date = new Date();
-    date.setFullYear(parseInt(year));
-    date.setMonth(parseInt(month) - 1);
-    date.setDate(parseInt(day));
-    date.setHours(parseInt(hours));
-    date.setMinutes(parseInt(minutes));
-    date.setSeconds(parseInt(seconds));
-
-    return date;
-}
-
-function toUTCString(localDate) {
-    if (!localDate) return null;
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, '0');
-    const day = String(localDate.getDate()).padStart(2, '0');
-    const hours = String(localDate.getHours()).padStart(2, '0');
-    const minutes = String(localDate.getMinutes()).padStart(2, '0');
-    const seconds = String(localDate.getSeconds()).padStart(2, '0');
-
-    // Format as YYYY-MM-DD HH:mm:ss
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
-async function handleDrop(event, targetDate) {
-    event.currentTarget.classList.remove('drag-over');
-    const draggedEventData = JSON.parse(event.dataTransfer.getData('text/plain'));
-
-    try {
-        const eventDate = new Date(draggedEventData.start_datetime);
-        const timeDiff = eventDate.getTime() - new Date(eventDate.toDateString()).getTime();
-
-        // Create new dates preserving the time
-        const newStartDate = new Date(targetDate);
-        newStartDate.setTime(newStartDate.getTime() + timeDiff);
-
-        const newEndDate = new Date(newStartDate);
-        const duration = new Date(draggedEventData.end_datetime).getTime() - new Date(draggedEventData.start_datetime).getTime();
-        newEndDate.setTime(newEndDate.getTime() + duration);
-
-        const eventData = {
-            title: draggedEventData.title,
-            start_datetime: newStartDate.toISOString().slice(0, 19).replace('T', ' '),
-            end_datetime: newEndDate.toISOString().slice(0, 19).replace('T', ' '),
-        };
-
-        const response = await axios.put(`/events/${draggedEventData.id}`, eventData);
-
-        // Update local events with the response data
-        const updatedEvent = response.data.event;
-        const updatedEvents = props.events.map(event => {
-            if (event.id === draggedEventData.id) {
-                return {
-                    ...event,
-                    start_datetime: updatedEvent.start_datetime,
-                    end_datetime: updatedEvent.end_datetime,
-                };
-            }
-            return event;
-        });
-
-        emit('update:events', updatedEvents);
-    } catch (error) {
-        console.error('Error updating event:', error);
-        alert('Failed to update event. Please try again.');
-    }
-}
-
-// Computed properties
-const currentMonthName = computed(() => {
-    return currentDate.value.toLocaleString('default', {month: 'long'});
-});
-
-const currentYear = computed(() => {
-    return currentDate.value.getFullYear();
+const monthName = computed(() => {
+    return new Date(currentYear.value, currentMonth.value).toLocaleString('default', {month: 'long'});
 });
 
 const calendarDays = computed(() => {
-    const year = currentDate.value.getFullYear();
-    const month = currentDate.value.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const days = [];
+    const firstDay = new Date(currentYear.value, currentMonth.value, 1);
+    const lastDay = new Date(currentYear.value, currentMonth.value + 1, 0);
 
-    // Previous month days
-    const firstDayWeekday = firstDay.getDay();
-    for (let i = firstDayWeekday - 1; i >= 0; i--) {
-        const date = new Date(year, month, -i);
+    // Get the first day of the week (0 = Sunday)
+    let start = firstDay.getDay();
+
+    // Add days from previous month
+    const prevMonthLastDay = new Date(currentYear.value, currentMonth.value, 0).getDate();
+    for (let i = start - 1; i >= 0; i--) {
+        const date = new Date(currentYear.value, currentMonth.value - 1, prevMonthLastDay - i);
         days.push({
             date,
-            dayOfMonth: date.getDate(),
             isCurrentMonth: false
         });
     }
 
-    // Current month days
+    // Add days from current month
     for (let i = 1; i <= lastDay.getDate(); i++) {
-        const date = new Date(year, month, i);
+        const date = new Date(currentYear.value, currentMonth.value, i);
         days.push({
             date,
-            dayOfMonth: i,
             isCurrentMonth: true
         });
     }
 
-    // Next month days to complete the row
-    const lastDayWeekday = lastDay.getDay();
-    const remainingDays = 6 - lastDayWeekday;
+    // Calculate if we need 6 weeks instead of 5
+    const totalDays = Math.ceil((start + lastDay.getDate()) / 7) * 7;
+    const remainingDays = totalDays - days.length;
+
+    // Add days from next month
     for (let i = 1; i <= remainingDays; i++) {
-        const date = new Date(year, month + 1, i);
+        const date = new Date(currentYear.value, currentMonth.value + 1, i);
         days.push({
             date,
-            dayOfMonth: date.getDate(),
             isCurrentMonth: false
         });
     }
 
     return days;
 });
-
-// Helper functions
-function isToday(date) {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-}
-
-function isSelectedDate(date) {
-    return selectedDate.value?.toDateString() === date.toDateString();
-}
 
 function getDayEvents(date) {
     return props.events.filter(event => {
@@ -308,38 +184,95 @@ function getDayEvents(date) {
     });
 }
 
-// Navigation functions
 function previousMonth() {
-    currentDate.value = new Date(
-        currentDate.value.getFullYear(),
-        currentDate.value.getMonth() - 1,
-        1
-    );
+    if (currentMonth.value === 0) {
+        currentMonth.value = 11;
+        currentYear.value--;
+    } else {
+        currentMonth.value--;
+    }
 }
 
 function nextMonth() {
-    currentDate.value = new Date(
-        currentDate.value.getFullYear(),
-        currentDate.value.getMonth() + 1,
-        1
-    );
+    if (currentMonth.value === 11) {
+        currentMonth.value = 0;
+        currentYear.value++;
+    } else {
+        currentMonth.value++;
+    }
 }
 
 function resetToToday() {
-    currentDate.value = new Date();
-    selectedDate.value = currentDate.value;
+    const today = new Date();
+    currentMonth.value = today.getMonth();
+    currentYear.value = today.getFullYear();
+    emit('update:selectedDate', today);
 }
 
 function handleDayClick(day) {
-    selectedDate.value = day.date;
+    emit('update:selectedDate', day.date);
 
+    // Navigate to the appropriate month if clicking on a day from adjacent months
     if (!day.isCurrentMonth) {
-        currentDate.value = new Date(
-            day.date.getFullYear(),
-            day.date.getMonth(),
-            1
-        );
+        currentMonth.value = day.date.getMonth();
+        currentYear.value = day.date.getFullYear();
     }
+}
+
+function handleDragStart(event, calendarEvent) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent));
+}
+
+function handleDragEnd() {
+    // Clean up any drag-related states if needed
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+}
+
+async function handleDrop(event, targetDate) {
+    event.preventDefault();
+    const draggedEvent = JSON.parse(event.dataTransfer.getData('text/plain'));
+
+    // Calculate time difference between original and new date
+    const originalDate = toLocalDate(draggedEvent.start_datetime);
+    const timeDiff = targetDate.getTime() - originalDate.getTime();
+
+    // Apply the same time difference to both start and end times
+    const newStartDate = new Date(originalDate.getTime() + timeDiff);
+    const newEndDate = new Date(toLocalDate(draggedEvent.end_datetime).getTime() + timeDiff);
+
+    const eventData = {
+        title: draggedEvent.title,
+        start_datetime: toUTCString(newStartDate),
+        end_datetime: toUTCString(newEndDate)
+    };
+
+    try {
+        const response = await updateEvent(draggedEvent.id, eventData);
+        const updatedEvents = props.events.map(e =>
+            e.id === draggedEvent.id ? {...response, color: '#3B82F6'} : e
+        );
+        emit('update:events', updatedEvents);
+    } catch (error) {
+        alert('Failed to update event. Please try again.');
+    }
+}
+
+function isToday(date) {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+}
+
+function isSelectedDate(date) {
+    return props.selectedDate.toDateString() === date.toDateString();
 }
 </script>
 

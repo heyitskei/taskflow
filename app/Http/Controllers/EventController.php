@@ -3,22 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use Carbon\Carbon;
+use App\Services\EventService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class EventController extends Controller
 {
+    private EventService $eventService;
+
+    public function __construct(EventService $eventService)
+    {
+        $this->eventService = $eventService;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(): JsonResponse
     {
-        $events = Event::all()->map(function ($event) {
-            return $this->formatEvent($event);
-        });
-        return response()->json($events);
+        return response()->json($this->eventService->getAllEvents());
     }
 
     /**
@@ -40,13 +44,8 @@ class EventController extends Controller
             'end_datetime' => 'required|date|after:start_datetime',
         ]);
 
-        // Convert to UTC before saving
-        $validated['start_datetime'] = Carbon::parse($validated['start_datetime'])->utc();
-        $validated['end_datetime'] = Carbon::parse($validated['end_datetime'])->utc();
-
-        $event = Event::create($validated);
-
-        return response()->json($this->formatEvent($event), 201);
+        $event = $this->eventService->createEvent($validated);
+        return response()->json($event, 201);
     }
 
     /**
@@ -54,7 +53,7 @@ class EventController extends Controller
      */
     public function show(Event $event): JsonResponse
     {
-        return response()->json($this->formatEvent($event));
+        return response()->json($this->eventService->formatEvent($event));
     }
 
     /**
@@ -77,15 +76,10 @@ class EventController extends Controller
                 'end_datetime' => 'required|date_format:Y-m-d H:i:s|after:start_datetime',
             ]);
 
-            // Convert to UTC before saving
-            $validated['start_datetime'] = Carbon::parse($validated['start_datetime'])->utc();
-            $validated['end_datetime'] = Carbon::parse($validated['end_datetime'])->utc();
-
-            $event->update($validated);
-
+            $updatedEvent = $this->eventService->updateEvent($event, $validated);
             return response()->json([
                 'message' => 'Event updated successfully',
-                'event' => $this->formatEvent($event->fresh())
+                'event' => $updatedEvent
             ]);
         } catch (\Exception $e) {
             Log::error('Error updating event: ' . $e->getMessage());
@@ -101,22 +95,7 @@ class EventController extends Controller
      */
     public function destroy(Event $event): JsonResponse
     {
-        $event->delete();
+        $this->eventService->deleteEvent($event);
         return response()->json(null, 204);
-    }
-
-    /**
-     * Format event dates consistently.
-     */
-    private function formatEvent(Event $event): array
-    {
-        return [
-            'id' => $event->id,
-            'title' => $event->title,
-            'start_datetime' => Carbon::parse($event->start_datetime)->format('Y-m-d H:i:s'),
-            'end_datetime' => Carbon::parse($event->end_datetime)->format('Y-m-d H:i:s'),
-            'created_at' => $event->created_at,
-            'updated_at' => $event->updated_at,
-        ];
     }
 }

@@ -185,4 +185,37 @@ describe('Calendar Component', () => {
         expect(alertMock).toHaveBeenCalledWith('Failed to update event. Please try again.');
         alertMock.mockRestore();
     });
+
+    test('navigates to previous month when clicking on a previous month day', async () => {
+        await wrapper.vm.$nextTick();
+
+        // Find the first day cell (usually from previous month)
+        const firstDayCell = wrapper.find('.opacity-50');
+        expect(firstDayCell.exists()).toBe(true);
+
+        await firstDayCell.trigger('click');
+        await wrapper.vm.$nextTick();
+
+        const monthElement = wrapper.find('h2.text-xl.font-semibold');
+        const yearElement = wrapper.find('span.text-sm.text-gray-500');
+        expect(monthElement.text()).toBe('December');
+        expect(yearElement.text()).toBe('2023');
+    });
+
+    test('navigates to next month when clicking on a next month day', async () => {
+        await wrapper.vm.$nextTick();
+
+        // Find all day cells and get the last one (usually from next month)
+        const dayCells = wrapper.findAll('.bg-white.p-1\\.5');
+        const lastDayCell = dayCells[dayCells.length - 1];
+        expect(lastDayCell.exists()).toBe(true);
+
+        await lastDayCell.trigger('click');
+        await wrapper.vm.$nextTick();
+
+        const monthElement = wrapper.find('h2.text-xl.font-semibold');
+        const yearElement = wrapper.find('span.text-sm.text-gray-500');
+        expect(monthElement.text()).toBe('February');
+        expect(yearElement.text()).toBe('2024');
+    });
 });

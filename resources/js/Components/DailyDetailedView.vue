@@ -19,7 +19,7 @@
                         <span class="font-medium text-gray-800">{{ event.title }}</span>
                         <button
                             class="text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-red-50 rounded-full"
-                            @click="deleteEvent(event)"
+                            @click="handleDeleteEvent(event)"
                         >
                             ×
                         </button>
@@ -101,10 +101,8 @@
 
 <script setup>
 import {computed, onMounted, ref} from 'vue';
-import axios from 'axios';
-
-// Add CSRF token to all requests
-axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+import {createEvent, deleteEvent, fetchEvents} from '../services/eventService';
+import {formatFullDate, formatTime, toLocalDate, toUTCString} from '../utils/dateTime';
 
 const props = defineProps({
     selectedDate: {
@@ -129,12 +127,7 @@ const newEvent = ref({
 
 const formattedDate = computed(() => {
     if (!props.selectedDate) return '';
-    return new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    }).format(props.selectedDate);
+    return formatFullDate(props.selectedDate);
 });
 
 const dayEvents = computed(() => {
@@ -144,64 +137,6 @@ const dayEvents = computed(() => {
         return eventDate.toDateString() === props.selectedDate.toDateString();
     });
 });
-
-function toLocalDate(utcDateString) {
-    if (!utcDateString) return null;
-    // Parse the UTC date string and create a local date
-    const [datePart, timePart] = utcDateString.split(' ');
-    const [year, month, day] = datePart.split('-');
-    const [hours, minutes, seconds] = timePart.split(':');
-
-    const date = new Date();
-    date.setFullYear(parseInt(year));
-    date.setMonth(parseInt(month) - 1);
-    date.setDate(parseInt(day));
-    date.setHours(parseInt(hours));
-    date.setMinutes(parseInt(minutes));
-    date.setSeconds(parseInt(seconds));
-
-    return date;
-}
-
-function toUTCString(localDate) {
-    if (!localDate) return null;
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, '0');
-    const day = String(localDate.getDate()).padStart(2, '0');
-    const hours = String(localDate.getHours()).padStart(2, '0');
-    const minutes = String(localDate.getMinutes()).padStart(2, '0');
-    const seconds = String(localDate.getSeconds()).padStart(2, '0');
-
-    // Format as YYYY-MM-DD HH:mm:ss
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
-function formatTime(date) {
-    if (!date) return '';
-
-    try {
-        // Log the input for debugging
-        console.log('Formatting date:', date);
-
-        // Create a new date object directly from the MySQL datetime string
-        const dateObj = new Date(date);
-
-        // Check if date is valid
-        if (isNaN(dateObj.getTime())) {
-            console.error('Invalid date:', date);
-            return 'Invalid Date';
-        }
-
-        return dateObj.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-    } catch (error) {
-        console.error('Error formatting date:', error);
-        return 'Invalid Date';
-    }
-}
 
 function startNewEvent() {
     isEditing.value = true;
@@ -216,7 +151,7 @@ function cancelEdit() {
     isEditing.value = false;
 }
 
-function saveEvent() {
+async function saveEvent() {
     if (!newEvent.value.title || !newEvent.value.start || !newEvent.value.end) {
         return;
     }
@@ -225,14 +160,12 @@ function saveEvent() {
     const [startHours, startMinutes] = newEvent.value.start.split(':');
     const [endHours, endMinutes] = newEvent.value.end.split(':');
 
-    // Create dates in local timezone
     const startDate = new Date(eventDate);
     startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
 
     const endDate = new Date(eventDate);
     endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
 
-    // Ensure end date is after start date
     if (endDate <= startDate) {
         alert('End time must be after start time');
         return;
@@ -244,61 +177,33 @@ function saveEvent() {
         end_datetime: toUTCString(endDate)
     };
 
-    console.log('Sending event data:', eventData);
-
-    // Send POST request to create event
-    axios.post('/events', eventData)
-        .then(response => {
-            console.log('Received response:', response.data);
-            const event = {
-                id: response.data.id,
-                title: response.data.title,
-                start_datetime: response.data.start_datetime,
-                end_datetime: response.data.end_datetime,
-                color: '#3B82F6'
-            };
-            const updatedEvents = [...props.events, event];
-            emit('update:events', updatedEvents);
-            isEditing.value = false;
-            newEvent.value = {title: '', start: '', end: ''};
-        })
-        .catch(error => {
-            console.error('Error creating event:', error);
-            console.error('Validation errors:', error.response?.data?.errors);
-            console.error('Event data sent:', eventData);
-            alert('Failed to create event. Please try again.');
-        });
+    try {
+        const event = await createEvent(eventData);
+        const updatedEvents = [...props.events, event];
+        emit('update:events', updatedEvents);
+        isEditing.value = false;
+        newEvent.value = {title: '', start: '', end: ''};
+    } catch (error) {
+        alert('Failed to create event. Please try again.');
+    }
 }
 
-function deleteEvent(event) {
-    // Send DELETE request to remove event
-    axios.delete(`/events/${event.id}`)
-        .then(() => {
-            const updatedEvents = props.events.filter(e => e.id !== event.id);
-            emit('update:events', updatedEvents);
-        })
-        .catch(error => {
-            console.error('Error deleting event:', error);
-            alert('Failed to delete event');
-        });
+async function handleDeleteEvent(event) {
+    try {
+        await deleteEvent(event.id);
+        const updatedEvents = props.events.filter(e => e.id !== event.id);
+        emit('update:events', updatedEvents);
+    } catch (error) {
+        alert('Failed to delete event');
+    }
 }
 
-onMounted(() => {
-    // Fetch events when component mounts
-    axios.get('/events')
-        .then(response => {
-            const events = response.data.map(event => ({
-                id: event.id,
-                title: event.title,
-                start_datetime: event.start_datetime,
-                end_datetime: event.end_datetime,
-                color: '#3B82F6'
-            }));
-            emit('update:events', events);
-        })
-        .catch(error => {
-            console.error('Error fetching events:', error);
-            alert('Failed to load events. Please refresh the page.');
-        });
+onMounted(async () => {
+    try {
+        const events = await fetchEvents();
+        emit('update:events', events);
+    } catch (error) {
+        alert('Failed to load events. Please refresh the page.');
+    }
 });
 </script>
