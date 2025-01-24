@@ -1,29 +1,32 @@
 export function toLocalDate(utcDateString) {
     if (!utcDateString) return null;
-    // Parse the UTC date string and create a local date
+
+    // Parse the UTC date string
     const [datePart, timePart] = utcDateString.split(' ');
     const [year, month, day] = datePart.split('-');
     const [hours, minutes, seconds] = timePart.split(':');
 
-    const date = new Date();
-    date.setFullYear(parseInt(year));
-    date.setMonth(parseInt(month) - 1);
-    date.setDate(parseInt(day));
-    date.setHours(parseInt(hours));
-    date.setMinutes(parseInt(minutes));
-    date.setSeconds(parseInt(seconds));
-
-    return date;
+    // Create date in UTC
+    return new Date(Date.UTC(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes),
+        parseInt(seconds)
+    ));
 }
 
 export function toUTCString(localDate) {
     if (!localDate) return null;
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, '0');
-    const day = String(localDate.getDate()).padStart(2, '0');
-    const hours = String(localDate.getHours()).padStart(2, '0');
-    const minutes = String(localDate.getMinutes()).padStart(2, '0');
-    const seconds = String(localDate.getSeconds()).padStart(2, '0');
+
+    // Convert local date to UTC string in MySQL format
+    const year = localDate.getUTCFullYear();
+    const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getUTCDate()).padStart(2, '0');
+    const hours = String(localDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(localDate.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(localDate.getUTCSeconds()).padStart(2, '0');
 
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
@@ -55,4 +58,4 @@ export function formatFullDate(date) {
         month: 'long',
         day: 'numeric'
     }).format(date);
-} 
+}

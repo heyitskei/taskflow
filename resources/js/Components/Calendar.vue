@@ -241,13 +241,25 @@ async function handleDrop(event, targetDate) {
     event.preventDefault();
     const draggedEvent = JSON.parse(event.dataTransfer.getData('text/plain'));
 
-    // Calculate time difference between original and new date
-    const originalDate = toLocalDate(draggedEvent.start_datetime);
-    const timeDiff = targetDate.getTime() - originalDate.getTime();
+    // Get the original dates
+    const originalStartDate = toLocalDate(draggedEvent.start_datetime);
+    const originalEndDate = toLocalDate(draggedEvent.end_datetime);
 
-    // Apply the same time difference to both start and end times
-    const newStartDate = new Date(originalDate.getTime() + timeDiff);
-    const newEndDate = new Date(toLocalDate(draggedEvent.end_datetime).getTime() + timeDiff);
+    // Create new dates preserving the original times
+    const newStartDate = new Date(Date.UTC(
+        targetDate.getUTCFullYear(),
+        targetDate.getUTCMonth(),
+        targetDate.getUTCDate(),
+        originalStartDate.getUTCHours(),
+        originalStartDate.getUTCMinutes(),
+        originalStartDate.getUTCSeconds()
+    ));
+
+    // Calculate the duration of the event in milliseconds
+    const duration = originalEndDate.getTime() - originalStartDate.getTime();
+
+    // Add the same duration to the new start date to get the new end date
+    const newEndDate = new Date(newStartDate.getTime() + duration);
 
     const eventData = {
         title: draggedEvent.title,

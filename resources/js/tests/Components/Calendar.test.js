@@ -218,4 +218,59 @@ describe('Calendar Component', () => {
         expect(monthElement.text()).toBe('February');
         expect(yearElement.text()).toBe('2024');
     });
+
+    test('preserves event time when dragging to a new date', async () => {
+        // Set up the initial state
+        const eventWithTime = {
+            id: 2,
+            title: 'Timed Event',
+            start_datetime: '2024-01-01 14:30:00', // 9:30 AM EST
+            end_datetime: '2024-01-01 15:45:00'    // 10:45 AM EST
+        };
+
+        await wrapper.setProps({
+            events: [eventWithTime],
+            selectedDate: new Date(Date.UTC(2024, 0, 1))
+        });
+        await wrapper.vm.$nextTick();
+
+        // Set up the target date (January 15th)
+        const targetDate = new Date(Date.UTC(2024, 0, 15));
+
+        // Mock successful API response
+        axios.put.mockResolvedValueOnce({
+            data: {
+                event: {
+                    ...eventWithTime,
+                    start_datetime: '2024-01-15 14:30:00',
+                    end_datetime: '2024-01-15 15:45:00'
+                }
+            }
+        });
+
+        // Create a drop event with the target date
+        const dropEvent = {
+            preventDefault: vi.fn(),
+            dataTransfer: {
+                getData: (type) => type === 'text/plain' ? JSON.stringify(eventWithTime) : undefined
+            },
+            target: {
+                getAttribute: () => targetDate.toISOString()
+            }
+        };
+
+        // Trigger the drop event
+        await wrapper.vm.handleDrop(dropEvent, targetDate);
+        await wrapper.vm.$nextTick();
+
+        // Verify the API call preserves the original times
+        expect(axios.put).toHaveBeenCalledWith(
+            `/events/${eventWithTime.id}`,
+            {
+                title: eventWithTime.title,
+                start_datetime: '2024-01-15 14:30:00',
+                end_datetime: '2024-01-15 15:45:00'
+            }
+        );
+    });
 });

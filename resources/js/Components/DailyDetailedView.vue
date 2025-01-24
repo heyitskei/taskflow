@@ -160,11 +160,24 @@ async function saveEvent() {
     const [startHours, startMinutes] = newEvent.value.start.split(':');
     const [endHours, endMinutes] = newEvent.value.end.split(':');
 
-    const startDate = new Date(eventDate);
-    startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
+    // Create dates in UTC
+    const startDate = new Date(Date.UTC(
+        eventDate.getUTCFullYear(),
+        eventDate.getUTCMonth(),
+        eventDate.getUTCDate(),
+        parseInt(startHours),
+        parseInt(startMinutes),
+        0
+    ));
 
-    const endDate = new Date(eventDate);
-    endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+    const endDate = new Date(Date.UTC(
+        eventDate.getUTCFullYear(),
+        eventDate.getUTCMonth(),
+        eventDate.getUTCDate(),
+        parseInt(endHours),
+        parseInt(endMinutes),
+        0
+    ));
 
     if (endDate <= startDate) {
         alert('End time must be after start time');

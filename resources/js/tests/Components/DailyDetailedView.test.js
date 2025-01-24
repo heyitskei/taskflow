@@ -73,36 +73,53 @@ describe('DailyDetailedView Component', () => {
     });
 
     test('can add new event', async () => {
-        // Click add event button
-        const addButton = wrapper.find('button.bg-blue-50');
-        expect(addButton.exists()).toBe(true);
+        // Set the selected date
+        await wrapper.setProps({
+            selectedDate: new Date(Date.UTC(2024, 0, 1))
+        });
+        await wrapper.vm.$nextTick();
+
+        // Click the add event button and wait for the form to appear
+        const addButton = wrapper.find('button.w-full.py-2.px-4');
         await addButton.trigger('click');
         await wrapper.vm.$nextTick();
 
-        // Fill in event details
+        // Find and fill in the input fields
         const titleInput = wrapper.find('input[placeholder="Event title"]');
-        const startTimeInput = wrapper.find('input[type="time"]');
-        const endTimeInput = wrapper.findAll('input[type="time"]')[1];
+        const startTimeInput = wrapper.findAll('input[type="time"]').at(0);
+        const endTimeInput = wrapper.findAll('input[type="time"]').at(1);
 
         expect(titleInput.exists()).toBe(true);
         expect(startTimeInput.exists()).toBe(true);
         expect(endTimeInput.exists()).toBe(true);
 
         await titleInput.setValue('New Test Event');
-        await startTimeInput.setValue('19:00');
-        await endTimeInput.setValue('20:00');
+        await startTimeInput.setValue('14:00');
+        await endTimeInput.setValue('15:00');
+        await wrapper.vm.$nextTick();
 
-        // Submit the form
-        const submitButton = wrapper.find('button.bg-gradient-to-r');
-        expect(submitButton.exists()).toBe(true);
-        await submitButton.trigger('click');
+        // Mock successful API response
+        axios.post.mockResolvedValueOnce({
+            data: {
+                event: {
+                    id: 2,
+                    title: 'New Test Event',
+                    start_datetime: '2024-01-01 14:00:00',
+                    end_datetime: '2024-01-01 15:00:00'
+                }
+            }
+        });
+
+        // Click the save button
+        const saveButton = wrapper.find('button.bg-gradient-to-r');
+        await saveButton.trigger('click');
         await wrapper.vm.$nextTick();
 
         // Verify the API call
         expect(axios.post).toHaveBeenCalledWith('/events', {
             title: 'New Test Event',
-            start_datetime: '2024-01-01 19:00:00',
-            end_datetime: '2024-01-01 20:00:00'
+            start_datetime: '2024-01-01 14:00:00',
+            end_datetime: '2024-01-01 15:00:00'
         });
     });
 
