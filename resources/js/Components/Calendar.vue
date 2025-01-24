@@ -303,7 +303,7 @@ function isSelectedDate(date) {
 
 function getDayEvents(date) {
     return props.events.filter(event => {
-        const eventDate = new Date(event.start_datetime);
+        const eventDate = toLocalDate(event.start_datetime);
         return eventDate.toDateString() === date.toDateString();
     });
 }

@@ -140,10 +140,41 @@ const formattedDate = computed(() => {
 const dayEvents = computed(() => {
     if (!props.selectedDate) return [];
     return props.events.filter(event => {
-        const eventDate = new Date(event.start_datetime);
+        const eventDate = toLocalDate(event.start_datetime);
         return eventDate.toDateString() === props.selectedDate.toDateString();
     });
 });
+
+function toLocalDate(utcDateString) {
+    if (!utcDateString) return null;
+    // Parse the UTC date string and create a local date
+    const [datePart, timePart] = utcDateString.split(' ');
+    const [year, month, day] = datePart.split('-');
+    const [hours, minutes, seconds] = timePart.split(':');
+
+    const date = new Date();
+    date.setFullYear(parseInt(year));
+    date.setMonth(parseInt(month) - 1);
+    date.setDate(parseInt(day));
+    date.setHours(parseInt(hours));
+    date.setMinutes(parseInt(minutes));
+    date.setSeconds(parseInt(seconds));
+
+    return date;
+}
+
+function toUTCString(localDate) {
+    if (!localDate) return null;
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    const hours = String(localDate.getHours()).padStart(2, '0');
+    const minutes = String(localDate.getMinutes()).padStart(2, '0');
+    const seconds = String(localDate.getSeconds()).padStart(2, '0');
+
+    // Format as YYYY-MM-DD HH:mm:ss
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
 
 function formatTime(date) {
     if (!date) return '';
@@ -207,15 +238,10 @@ function saveEvent() {
         return;
     }
 
-    // Format dates in MySQL datetime format
-    const formatToMySQLDateTime = (date) => {
-        return date.toISOString().slice(0, 19).replace('T', ' ');
-    };
-
     const eventData = {
         title: newEvent.value.title,
-        start_datetime: formatToMySQLDateTime(startDate),
-        end_datetime: formatToMySQLDateTime(endDate)
+        start_datetime: toUTCString(startDate),
+        end_datetime: toUTCString(endDate)
     };
 
     console.log('Sending event data:', eventData);
@@ -253,7 +279,7 @@ function deleteEvent(event) {
         })
         .catch(error => {
             console.error('Error deleting event:', error);
-            // TODO: Add error handling UI
+            alert('Failed to delete event');
         });
 }
 

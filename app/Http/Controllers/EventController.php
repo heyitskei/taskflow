@@ -15,7 +15,9 @@ class EventController extends Controller
      */
     public function index(): JsonResponse
     {
-        $events = Event::all();
+        $events = Event::all()->map(function ($event) {
+            return $this->formatEvent($event);
+        });
         return response()->json($events);
     }
 
@@ -44,7 +46,7 @@ class EventController extends Controller
 
         $event = Event::create($validated);
 
-        return response()->json($event, 201);
+        return response()->json($this->formatEvent($event), 201);
     }
 
     /**
@@ -52,7 +54,7 @@ class EventController extends Controller
      */
     public function show(Event $event): JsonResponse
     {
-        return response()->json($event);
+        return response()->json($this->formatEvent($event));
     }
 
     /**
@@ -83,7 +85,7 @@ class EventController extends Controller
 
             return response()->json([
                 'message' => 'Event updated successfully',
-                'event' => $event->fresh()
+                'event' => $this->formatEvent($event->fresh())
             ]);
         } catch (\Exception $e) {
             Log::error('Error updating event: ' . $e->getMessage());
@@ -101,5 +103,20 @@ class EventController extends Controller
     {
         $event->delete();
         return response()->json(null, 204);
+    }
+
+    /**
+     * Format event dates consistently.
+     */
+    private function formatEvent(Event $event): array
+    {
+        return [
+            'id' => $event->id,
+            'title' => $event->title,
+            'start_datetime' => Carbon::parse($event->start_datetime)->format('Y-m-d H:i:s'),
+            'end_datetime' => Carbon::parse($event->end_datetime)->format('Y-m-d H:i:s'),
+            'created_at' => $event->created_at,
+            'updated_at' => $event->updated_at,
+        ];
     }
 }

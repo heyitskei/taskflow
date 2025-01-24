@@ -2,22 +2,31 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "dev": "vite",
         "build": "vite build",
-        "dev": "vite"
+        "test": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "test:ui": "vitest --ui"
     },
     "devDependencies": {
-        "@vitejs/plugin-vue": "^5.1.5",
-        "autoprefixer": "^10.4.20",
-        "axios": "^1.7.4",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^1.0.6",
-        "postcss": "^8.4.49",
-        "tailwindcss": "^3.4.14",
-        "vite": "^5.4.11"
+        "@inertiajs/vue3": "^1.0.0",
+        "@tailwindcss/forms": "^0.5.3",
+        "@testing-library/jest-dom": "^6.4.2",
+        "@testing-library/vue": "^8.0.1",
+        "@vitejs/plugin-vue": "^4.5.0",
+        "@vue/test-utils": "^2.4.3",
+        "autoprefixer": "^10.4.12",
+        "axios": "^1.6.1",
+        "happy-dom": "^13.3.8",
+        "laravel-vite-plugin": "^1.0.0",
+        "postcss": "^8.4.31",
+        "tailwindcss": "^3.2.1",
+        "vite": "^5.0.0",
+        "vitest": "^1.2.2",
+        "vue": "^3.2.41"
     },
     "dependencies": {
         "@inertiajs/vue3": "^1.2.0",
-        "vue": "^3.5.13",
         "vuetify": "^3.7.5"
     }
 }
