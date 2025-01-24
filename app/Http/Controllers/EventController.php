@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -37,7 +38,12 @@ class EventController extends Controller
             'end_datetime' => 'required|date|after:start_datetime',
         ]);
 
+        // Convert to UTC before saving
+        $validated['start_datetime'] = Carbon::parse($validated['start_datetime'])->utc();
+        $validated['end_datetime'] = Carbon::parse($validated['end_datetime'])->utc();
+
         $event = Event::create($validated);
+
         return response()->json($event, 201);
     }
 
@@ -68,6 +74,10 @@ class EventController extends Controller
                 'start_datetime' => 'required|date_format:Y-m-d H:i:s',
                 'end_datetime' => 'required|date_format:Y-m-d H:i:s|after:start_datetime',
             ]);
+
+            // Convert to UTC before saving
+            $validated['start_datetime'] = Carbon::parse($validated['start_datetime'])->utc();
+            $validated['end_datetime'] = Carbon::parse($validated['end_datetime'])->utc();
 
             $event->update($validated);
 

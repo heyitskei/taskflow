@@ -164,12 +164,43 @@ function handleDragLeave(event) {
     event.currentTarget.classList.remove('drag-over');
 }
 
+function toLocalDate(utcDateString) {
+    if (!utcDateString) return null;
+    // Parse the UTC date string and create a local date
+    const [datePart, timePart] = utcDateString.split(' ');
+    const [year, month, day] = datePart.split('-');
+    const [hours, minutes, seconds] = timePart.split(':');
+
+    const date = new Date();
+    date.setFullYear(parseInt(year));
+    date.setMonth(parseInt(month) - 1);
+    date.setDate(parseInt(day));
+    date.setHours(parseInt(hours));
+    date.setMinutes(parseInt(minutes));
+    date.setSeconds(parseInt(seconds));
+
+    return date;
+}
+
+function toUTCString(localDate) {
+    if (!localDate) return null;
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    const hours = String(localDate.getHours()).padStart(2, '0');
+    const minutes = String(localDate.getMinutes()).padStart(2, '0');
+    const seconds = String(localDate.getSeconds()).padStart(2, '0');
+
+    // Format as YYYY-MM-DD HH:mm:ss
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 async function handleDrop(event, targetDate) {
     event.currentTarget.classList.remove('drag-over');
     const draggedEventData = JSON.parse(event.dataTransfer.getData('text/plain'));
 
     try {
-        const eventDate = new Date(draggedEventData.start);
+        const eventDate = new Date(draggedEventData.start_datetime);
         const timeDiff = eventDate.getTime() - new Date(eventDate.toDateString()).getTime();
 
         // Create new dates preserving the time
@@ -177,10 +208,9 @@ async function handleDrop(event, targetDate) {
         newStartDate.setTime(newStartDate.getTime() + timeDiff);
 
         const newEndDate = new Date(newStartDate);
-        const duration = new Date(draggedEventData.end).getTime() - new Date(draggedEventData.start).getTime();
+        const duration = new Date(draggedEventData.end_datetime).getTime() - new Date(draggedEventData.start_datetime).getTime();
         newEndDate.setTime(newEndDate.getTime() + duration);
 
-        // Update event in the database
         const eventData = {
             title: draggedEventData.title,
             start_datetime: newStartDate.toISOString().slice(0, 19).replace('T', ' '),
@@ -195,8 +225,8 @@ async function handleDrop(event, targetDate) {
             if (event.id === draggedEventData.id) {
                 return {
                     ...event,
-                    start: new Date(updatedEvent.start_datetime),
-                    end: new Date(updatedEvent.end_datetime)
+                    start_datetime: updatedEvent.start_datetime,
+                    end_datetime: updatedEvent.end_datetime,
                 };
             }
             return event;
@@ -205,7 +235,6 @@ async function handleDrop(event, targetDate) {
         emit('update:events', updatedEvents);
     } catch (error) {
         console.error('Error updating event:', error);
-        // TODO: Implement proper error handling UI
         alert('Failed to update event. Please try again.');
     }
 }
@@ -274,7 +303,7 @@ function isSelectedDate(date) {
 
 function getDayEvents(date) {
     return props.events.filter(event => {
-        const eventDate = new Date(event.start);
+        const eventDate = new Date(event.start_datetime);
         return eventDate.toDateString() === date.toDateString();
     });
 }

@@ -24,9 +24,9 @@
                             ×
                         </button>
                     </div>
-                    <p class="text-sm text-gray-600 mt-1">
-                        {{ formatTime(event.start) }} - {{ formatTime(event.end) }}
-                    </p>
+                    <div class="flex-1 text-sm text-gray-600">
+                        {{ formatTime(event.start_datetime) }} - {{ formatTime(event.end_datetime) }}
+                    </div>
                 </div>
 
                 <div v-if="isEditing" class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
@@ -140,17 +140,36 @@ const formattedDate = computed(() => {
 const dayEvents = computed(() => {
     if (!props.selectedDate) return [];
     return props.events.filter(event => {
-        const eventDate = new Date(event.start);
+        const eventDate = new Date(event.start_datetime);
         return eventDate.toDateString() === props.selectedDate.toDateString();
     });
 });
 
 function formatTime(date) {
-    return new Date(date).toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
+    if (!date) return '';
+
+    try {
+        // Log the input for debugging
+        console.log('Formatting date:', date);
+
+        // Create a new date object directly from the MySQL datetime string
+        const dateObj = new Date(date);
+
+        // Check if date is valid
+        if (isNaN(dateObj.getTime())) {
+            console.error('Invalid date:', date);
+            return 'Invalid Date';
+        }
+
+        return dateObj.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return 'Invalid Date';
+    }
 }
 
 function startNewEvent() {
@@ -175,47 +194,53 @@ function saveEvent() {
     const [startHours, startMinutes] = newEvent.value.start.split(':');
     const [endHours, endMinutes] = newEvent.value.end.split(':');
 
+    // Create dates in local timezone
     const startDate = new Date(eventDate);
-    startDate.setHours(parseInt(startHours), parseInt(startMinutes));
-    startDate.setSeconds(0);
-    startDate.setMilliseconds(0);
+    startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
 
     const endDate = new Date(eventDate);
-    endDate.setHours(parseInt(endHours), parseInt(endMinutes));
-    endDate.setSeconds(0);
-    endDate.setMilliseconds(0);
+    endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
 
     // Ensure end date is after start date
     if (endDate <= startDate) {
-        console.error('End time must be after start time');
+        alert('End time must be after start time');
         return;
     }
 
+    // Format dates in MySQL datetime format
+    const formatToMySQLDateTime = (date) => {
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+    };
+
     const eventData = {
         title: newEvent.value.title,
-        start_datetime: startDate.toISOString().slice(0, 19).replace('T', ' '),
-        end_datetime: endDate.toISOString().slice(0, 19).replace('T', ' '),
+        start_datetime: formatToMySQLDateTime(startDate),
+        end_datetime: formatToMySQLDateTime(endDate)
     };
+
+    console.log('Sending event data:', eventData);
 
     // Send POST request to create event
     axios.post('/events', eventData)
         .then(response => {
+            console.log('Received response:', response.data);
             const event = {
                 id: response.data.id,
                 title: response.data.title,
-                start: new Date(response.data.start_datetime),
-                end: new Date(response.data.end_datetime),
+                start_datetime: response.data.start_datetime,
+                end_datetime: response.data.end_datetime,
                 color: '#3B82F6'
             };
             const updatedEvents = [...props.events, event];
             emit('update:events', updatedEvents);
             isEditing.value = false;
+            newEvent.value = {title: '', start: '', end: ''};
         })
         .catch(error => {
             console.error('Error creating event:', error);
             console.error('Validation errors:', error.response?.data?.errors);
             console.error('Event data sent:', eventData);
-            // TODO: Add error handling UI
+            alert('Failed to create event. Please try again.');
         });
 }
 
@@ -239,15 +264,15 @@ onMounted(() => {
             const events = response.data.map(event => ({
                 id: event.id,
                 title: event.title,
-                start: new Date(event.start_datetime),
-                end: new Date(event.end_datetime),
+                start_datetime: event.start_datetime,
+                end_datetime: event.end_datetime,
                 color: '#3B82F6'
             }));
             emit('update:events', events);
         })
         .catch(error => {
             console.error('Error fetching events:', error);
-            // TODO: Add error handling UI
+            alert('Failed to load events. Please refresh the page.');
         });
 });
 </script>
