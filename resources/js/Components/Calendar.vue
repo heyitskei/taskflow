@@ -57,8 +57,9 @@
                         isToday(day.date) && !isSelectedDate(day.date) && 'ring-1 ring-blue-200'
                     ]"
                     @click="handleDayClick(day)"
-                    @dragover.prevent
-                    @drop.prevent="handleDrop($event, day.date)"
+                    @dragleave="handleDragLeave"
+                    @dragover="handleDragOver($event, day.date)"
+                    @drop="handleDrop($event, day.date)"
                 >
                     <!-- Day Header -->
                     <div class="flex items-center justify-between mb-1">
@@ -85,9 +86,10 @@
                                 v-if="index < 2"
                                 :style="{ backgroundColor: event.color || '#3B82F6' }"
                                 :title="event.title"
-                                class="text-xs px-2 py-1 rounded text-white truncate cursor-move"
+                                class="text-xs px-2 py-1 rounded text-white truncate cursor-move transition-all duration-200"
                                 draggable="true"
                                 @dragstart="handleDragStart($event, event)"
+                                @dragend="handleDragEnd"
                             >
                                 {{ event.title }}
                             </div>
@@ -131,51 +133,81 @@ const selectedDate = computed({
     set: (value) => emit('update:selected-date', value)
 });
 
-// Drag and drop functionality
+// Drag and drop state
+const isDragging = ref(false);
+const draggedEvent = ref(null);
+
 function handleDragStart(event, calendarEvent) {
+    isDragging.value = true;
+    draggedEvent.value = calendarEvent;
     event.dataTransfer.setData('text/plain', JSON.stringify(calendarEvent));
     event.dataTransfer.effectAllowed = 'move';
+
+    // Add dragging class to the element
+    event.target.classList.add('dragging');
 }
 
-function handleDrop(event, targetDate) {
-    const draggedEvent = JSON.parse(event.dataTransfer.getData('text/plain'));
-    const eventDate = new Date(draggedEvent.start);
-    const timeDiff = eventDate.getTime() - new Date(eventDate.toDateString()).getTime();
+function handleDragEnd(event) {
+    isDragging.value = false;
+    draggedEvent.value = null;
+    event.target.classList.remove('dragging');
+}
 
-    // Create new dates preserving the time
-    const newStartDate = new Date(targetDate);
-    newStartDate.setTime(newStartDate.getTime() + timeDiff);
+function handleDragOver(event, date) {
+    event.preventDefault();
+    if (isDragging.value) {
+        event.currentTarget.classList.add('drag-over');
+    }
+}
 
-    const newEndDate = new Date(newStartDate);
-    const duration = new Date(draggedEvent.end).getTime() - new Date(draggedEvent.start).getTime();
-    newEndDate.setTime(newEndDate.getTime() + duration);
+function handleDragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+}
 
-    // Update event in the database
-    const eventData = {
-        title: draggedEvent.title,
-        start_datetime: newStartDate.toISOString().slice(0, 19).replace('T', ' '),
-        end_datetime: newEndDate.toISOString().slice(0, 19).replace('T', ' '),
-    };
+async function handleDrop(event, targetDate) {
+    event.currentTarget.classList.remove('drag-over');
+    const draggedEventData = JSON.parse(event.dataTransfer.getData('text/plain'));
 
-    axios.put(`/events/${draggedEvent.id}`, eventData)
-        .then(response => {
-            // Update local events
-            const updatedEvents = props.events.map(event => {
-                if (event.id === draggedEvent.id) {
-                    return {
-                        ...event,
-                        start: newStartDate,
-                        end: newEndDate
-                    };
-                }
-                return event;
-            });
-            emit('update:events', updatedEvents);
-        })
-        .catch(error => {
-            console.error('Error updating event:', error);
-            // TODO: Add error handling UI
+    try {
+        const eventDate = new Date(draggedEventData.start);
+        const timeDiff = eventDate.getTime() - new Date(eventDate.toDateString()).getTime();
+
+        // Create new dates preserving the time
+        const newStartDate = new Date(targetDate);
+        newStartDate.setTime(newStartDate.getTime() + timeDiff);
+
+        const newEndDate = new Date(newStartDate);
+        const duration = new Date(draggedEventData.end).getTime() - new Date(draggedEventData.start).getTime();
+        newEndDate.setTime(newEndDate.getTime() + duration);
+
+        // Update event in the database
+        const eventData = {
+            title: draggedEventData.title,
+            start_datetime: newStartDate.toISOString().slice(0, 19).replace('T', ' '),
+            end_datetime: newEndDate.toISOString().slice(0, 19).replace('T', ' '),
+        };
+
+        const response = await axios.put(`/events/${draggedEventData.id}`, eventData);
+
+        // Update local events with the response data
+        const updatedEvent = response.data.event;
+        const updatedEvents = props.events.map(event => {
+            if (event.id === draggedEventData.id) {
+                return {
+                    ...event,
+                    start: new Date(updatedEvent.start_datetime),
+                    end: new Date(updatedEvent.end_datetime)
+                };
+            }
+            return event;
         });
+
+        emit('update:events', updatedEvents);
+    } catch (error) {
+        console.error('Error updating event:', error);
+        // TODO: Implement proper error handling UI
+        alert('Failed to update event. Please try again.');
+    }
 }
 
 // Computed properties
@@ -319,7 +351,16 @@ function handleDayClick(day) {
     animation: subtle-bounce 0.3s ease;
 }
 
-/* Add drag and drop styles */
+/* Drag and drop styles */
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.drag-over {
+    @apply ring-2 ring-blue-400 bg-blue-50;
+}
+
 [draggable="true"] {
     cursor: move;
     user-select: none;
@@ -327,6 +368,7 @@ function handleDayClick(day) {
 
 [draggable="true"]:hover {
     opacity: 0.8;
+    transform: scale(1.02);
 }
 </style>
 

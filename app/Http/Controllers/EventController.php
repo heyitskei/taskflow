@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class EventController extends Controller
 {
@@ -61,14 +62,26 @@ class EventController extends Controller
      */
     public function update(Request $request, Event $event): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => 'required|string',
-            'start_datetime' => 'required|date',
-            'end_datetime' => 'required|date|after:start_datetime',
-        ]);
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string',
+                'start_datetime' => 'required|date_format:Y-m-d H:i:s',
+                'end_datetime' => 'required|date_format:Y-m-d H:i:s|after:start_datetime',
+            ]);
 
-        $event->update($validated);
-        return response()->json($event);
+            $event->update($validated);
+
+            return response()->json([
+                'message' => 'Event updated successfully',
+                'event' => $event->fresh()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating event: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error updating event',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
