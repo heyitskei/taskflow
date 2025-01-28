@@ -264,7 +264,6 @@ function isSelectedDate(date) {
 </script>
 
 <style scoped>
-/* Hide scrollbar but keep functionality */
 .overflow-y-auto {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -274,7 +273,6 @@ function isSelectedDate(date) {
     display: none;
 }
 
-/* Smooth transitions */
 .calendar-enter-active,
 .calendar-leave-active {
     transition: all 0.3s ease;
@@ -286,7 +284,6 @@ function isSelectedDate(date) {
     transform: translateY(30px);
 }
 
-/* Hover effects */
 @keyframes subtle-bounce {
     0%, 100% {
         transform: translateY(0);
@@ -300,7 +297,6 @@ function isSelectedDate(date) {
     animation: subtle-bounce 0.3s ease;
 }
 
-/* Drag and drop styles */
 .dragging {
     opacity: 0.5;
     transform: scale(0.95);

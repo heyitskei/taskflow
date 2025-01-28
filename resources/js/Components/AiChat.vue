@@ -1,6 +1,5 @@
 <template>
     <div class="bg-white rounded-xl shadow-lg p-4 transition-all duration-300 hover:shadow-xl flex flex-col h-full">
-        <!-- Chat Messages -->
         <div class="flex-1 overflow-auto mb-4 space-y-4">
             <div v-for="message in messages"
                  :key="message.id"
@@ -20,7 +19,6 @@
             </div>
         </div>
 
-        <!-- Input Area -->
         <div class="flex gap-4 items-end">
             <textarea
                 v-model="newMessage"
@@ -44,6 +42,7 @@
 
 <script setup>
 import {ref} from 'vue';
+import axios from "axios";
 
 const messages = ref([]);
 const newMessage = ref('');
@@ -56,7 +55,7 @@ function formatTime(timestamp) {
     });
 }
 
-function sendMessage() {
+async function sendMessage() {
     if (!newMessage.value.trim()) return;
 
     messages.value.push({
@@ -66,10 +65,12 @@ function sendMessage() {
         isUser: true
     });
 
-    // Clear input
-    newMessage.value = '';
+  const result = await axios.post('/api/openai', {
+    prompt: newMessage.value
+  })
+  console.log(result.data.choices[0].message.content);
 
-    // Simulate AI response (replace with actual AI integration)
+  // TODO: Remove this temporary response once OpenAI is integrated
     setTimeout(() => {
         messages.value.push({
             id: Date.now(),
@@ -78,5 +79,7 @@ function sendMessage() {
             isUser: false
         });
     }, 500);
+
+  newMessage.value = '';
 }
 </script>
