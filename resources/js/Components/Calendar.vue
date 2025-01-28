@@ -138,40 +138,24 @@ const calendarDays = computed(() => {
     const days = [];
     const firstDay = new Date(currentYear.value, currentMonth.value, 1);
     const lastDay = new Date(currentYear.value, currentMonth.value + 1, 0);
-
-    // Get the first day of the week (0 = Sunday)
     let start = firstDay.getDay();
 
-    // Add days from previous month
-    const prevMonthLastDay = new Date(currentYear.value, currentMonth.value, 0).getDate();
     for (let i = start - 1; i >= 0; i--) {
-        const date = new Date(currentYear.value, currentMonth.value - 1, prevMonthLastDay - i);
-        days.push({
-            date,
-            isCurrentMonth: false
-        });
+        const date = new Date(currentYear.value, currentMonth.value - 1, lastDay.getDate() - i);
+        days.push({date, isCurrentMonth: false});
     }
 
-    // Add days from current month
     for (let i = 1; i <= lastDay.getDate(); i++) {
         const date = new Date(currentYear.value, currentMonth.value, i);
-        days.push({
-            date,
-            isCurrentMonth: true
-        });
+        days.push({date, isCurrentMonth: true});
     }
 
-    // Calculate if we need 6 weeks instead of 5
     const totalDays = Math.ceil((start + lastDay.getDate()) / 7) * 7;
     const remainingDays = totalDays - days.length;
 
-    // Add days from next month
     for (let i = 1; i <= remainingDays; i++) {
         const date = new Date(currentYear.value, currentMonth.value + 1, i);
-        days.push({
-            date,
-            isCurrentMonth: false
-        });
+        days.push({date, isCurrentMonth: false});
     }
 
     return days;
@@ -211,8 +195,6 @@ function resetToToday() {
 
 function handleDayClick(day) {
     emit('update:selectedDate', day.date);
-
-    // Navigate to the appropriate month if clicking on a day from adjacent months
     if (!day.isCurrentMonth) {
         currentMonth.value = day.date.getMonth();
         currentYear.value = day.date.getFullYear();
@@ -225,7 +207,6 @@ function handleDragStart(event, calendarEvent) {
 }
 
 function handleDragEnd() {
-    // Clean up any drag-related states if needed
 }
 
 function handleDragOver(event) {
@@ -240,12 +221,9 @@ function handleDragLeave(event) {
 async function handleDrop(event, targetDate) {
     event.preventDefault();
     const draggedEvent = JSON.parse(event.dataTransfer.getData('text/plain'));
-
-    // Get the original dates
     const originalStartDate = toLocalDate(draggedEvent.start_datetime);
     const originalEndDate = toLocalDate(draggedEvent.end_datetime);
 
-    // Create new dates preserving the original times
     const newStartDate = new Date(Date.UTC(
         targetDate.getUTCFullYear(),
         targetDate.getUTCMonth(),
@@ -255,10 +233,7 @@ async function handleDrop(event, targetDate) {
         originalStartDate.getUTCSeconds()
     ));
 
-    // Calculate the duration of the event in milliseconds
     const duration = originalEndDate.getTime() - originalStartDate.getTime();
-
-    // Add the same duration to the new start date to get the new end date
     const newEndDate = new Date(newStartDate.getTime() + duration);
 
     const eventData = {
@@ -273,7 +248,7 @@ async function handleDrop(event, targetDate) {
             e.id === draggedEvent.id ? {...response, color: '#3B82F6'} : e
         );
         emit('update:events', updatedEvents);
-    } catch (error) {
+    } catch {
         alert('Failed to update event. Please try again.');
     }
 }

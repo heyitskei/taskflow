@@ -117,13 +117,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:events']);
-
 const isEditing = ref(false);
-const newEvent = ref({
-    title: '',
-    start: '',
-    end: ''
-});
+const newEvent = ref({title: '', start: '', end: ''});
 
 const formattedDate = computed(() => {
     if (!props.selectedDate) return '';
@@ -140,11 +135,7 @@ const dayEvents = computed(() => {
 
 function startNewEvent() {
     isEditing.value = true;
-    newEvent.value = {
-        title: '',
-        start: '',
-        end: ''
-    };
+    newEvent.value = {title: '', start: '', end: ''};
 }
 
 function cancelEdit() {
@@ -152,15 +143,12 @@ function cancelEdit() {
 }
 
 async function saveEvent() {
-    if (!newEvent.value.title || !newEvent.value.start || !newEvent.value.end) {
-        return;
-    }
+    if (!newEvent.value.title || !newEvent.value.start || !newEvent.value.end) return;
 
     const eventDate = props.selectedDate;
     const [startHours, startMinutes] = newEvent.value.start.split(':');
     const [endHours, endMinutes] = newEvent.value.end.split(':');
 
-    // Create dates in UTC
     const startDate = new Date(Date.UTC(
         eventDate.getUTCFullYear(),
         eventDate.getUTCMonth(),
@@ -192,11 +180,10 @@ async function saveEvent() {
 
     try {
         const event = await createEvent(eventData);
-        const updatedEvents = [...props.events, event];
-        emit('update:events', updatedEvents);
+        emit('update:events', [...props.events, event]);
         isEditing.value = false;
         newEvent.value = {title: '', start: '', end: ''};
-    } catch (error) {
+    } catch {
         alert('Failed to create event. Please try again.');
     }
 }
@@ -204,9 +191,8 @@ async function saveEvent() {
 async function handleDeleteEvent(event) {
     try {
         await deleteEvent(event.id);
-        const updatedEvents = props.events.filter(e => e.id !== event.id);
-        emit('update:events', updatedEvents);
-    } catch (error) {
+        emit('update:events', props.events.filter(e => e.id !== event.id));
+    } catch {
         alert('Failed to delete event');
     }
 }
@@ -215,7 +201,7 @@ onMounted(async () => {
     try {
         const events = await fetchEvents();
         emit('update:events', events);
-    } catch (error) {
+    } catch {
         alert('Failed to load events. Please refresh the page.');
     }
 });

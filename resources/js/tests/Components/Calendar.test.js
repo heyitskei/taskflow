@@ -182,6 +182,10 @@ describe('Calendar Component', () => {
             }
         });
 
+        // Wait for the next tick to allow the promise rejection to be handled
+        await wrapper.vm.$nextTick();
+        await new Promise(resolve => setTimeout(resolve, 0));
+
         expect(alertMock).toHaveBeenCalledWith('Failed to update event. Please try again.');
         alertMock.mockRestore();
     });

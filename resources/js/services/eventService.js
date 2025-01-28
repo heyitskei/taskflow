@@ -10,8 +10,7 @@ export async function fetchEvents() {
             ...event,
             color: '#3B82F6'
         }));
-    } catch (error) {
-        console.error('Error fetching events:', error);
+    } catch {
         throw new Error('Failed to load events');
     }
 }
@@ -23,9 +22,7 @@ export async function createEvent(eventData) {
             ...response.data,
             color: '#3B82F6'
         };
-    } catch (error) {
-        console.error('Error creating event:', error);
-        console.error('Validation errors:', error.response?.data?.errors);
+    } catch {
         throw new Error('Failed to create event');
     }
 }
@@ -34,8 +31,7 @@ export async function updateEvent(eventId, eventData) {
     try {
         const response = await axios.put(`/events/${eventId}`, eventData);
         return response.data.event;
-    } catch (error) {
-        console.error('Error updating event:', error);
+    } catch {
         throw new Error('Failed to update event');
     }
 }
@@ -43,8 +39,7 @@ export async function updateEvent(eventId, eventData) {
 export async function deleteEvent(eventId) {
     try {
         await axios.delete(`/events/${eventId}`);
-    } catch (error) {
-        console.error('Error deleting event:', error);
+    } catch {
         throw new Error('Failed to delete event');
     }
 } 
