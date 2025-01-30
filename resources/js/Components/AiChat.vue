@@ -68,17 +68,14 @@ async function sendMessage() {
   const result = await axios.post('/api/openai', {
     prompt: newMessage.value
   })
-  console.log(result.data.choices[0].message.content);
+    const answer = result.data.choices[0].message.content
 
-  // TODO: Remove this temporary response once OpenAI is integrated
-    setTimeout(() => {
-        messages.value.push({
-            id: Date.now(),
-            content: "I'm processing your request...",
-            timestamp: new Date(),
-            isUser: false
-        });
-    }, 500);
+    messages.value.push({
+        id: Date.now(),
+        content: answer,
+        timestamp: new Date(),
+        isUser: false
+    });
 
   newMessage.value = '';
 }

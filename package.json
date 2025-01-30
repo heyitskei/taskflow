@@ -27,6 +27,7 @@
     },
     "dependencies": {
         "@inertiajs/vue3": "^1.2.0",
+        "openai": "^4.80.1",
         "vuetify": "^3.7.5"
     }
 }
