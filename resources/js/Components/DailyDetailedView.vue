@@ -89,7 +89,6 @@
             class="flex-1 bg-gray-50 rounded-lg p-8 flex flex-col items-center justify-center"
         >
             <div class="text-gray-400 mb-3">
-                <!-- You can add an icon here -->
                 📅
             </div>
             <p class="text-gray-600 text-center">

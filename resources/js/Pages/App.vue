@@ -54,12 +54,12 @@ function updateEvents(newEvents) {
                             class="h-full"
                         />
                     </div>
-                    <div class="flex-1 min-h-0 overflow-auto">
-                        <AiChat class="h-full"/>
-                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- AI Chat Component-->
+        <AiChat/>
     </div>
 </template>
 
