@@ -239,6 +239,7 @@ async function sendMessage() {
         prompt: newMessage.value
     });
 
+    console.log(result.data);
     newMessage.value = '';
     const answer = result.data.choices[0].message.content;
 
