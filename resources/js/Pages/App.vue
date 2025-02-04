@@ -3,8 +3,9 @@ import Calendar from "../Components/Calendar.vue";
 import DailyDetailedView from "../Components/DailyDetailedView.vue";
 import DailyNewsDigest from "../Components/DailyNewsDigest.vue";
 import AiChat from "../Components/AiChat.vue";
-import {ref} from 'vue';
+import {nextTick, ref, watch} from 'vue';
 import {useDarkMode} from '../stores/darkMode';
+import axios from "axios";
 
 const selectedDate = ref(new Date());
 const events = ref([]);
@@ -28,6 +29,75 @@ function toggleAiChatFullscreen() {
 
 function updateChatMessages(messages) {
     chatMessages.value = messages;
+}
+
+function handleEventCreated(newEvent) {
+    events.value = [...events.value, {...newEvent, color: '#3B82F6'}];
+}
+
+// Scroll to bottom when new messages are added
+watch(() => chatMessages.value.length, () => {
+    nextTick(() => {
+        const container = document.querySelector('.messages-container');
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    });
+});
+
+function formatTime(timestamp) {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+async function sendMessage() {
+    if (!chatMessages.value.trim()) return;
+
+    const updatedMessages = [...chatMessages.value, {
+        id: Date.now(),
+        content: chatMessages.value,
+        timestamp: new Date(),
+        isUser: true
+    }];
+
+    updateChatMessages(updatedMessages);
+    const userMessage = chatMessages.value;
+    chatMessages.value = '';
+
+    try {
+        const result = await axios.post('/api/openai', {
+            prompt: userMessage
+        });
+
+        if (result.data.error) {
+            throw new Error(result.data.error);
+        }
+
+        // If an event was created, update the events list
+        if (result.data.event) {
+            const newEvent = {...result.data.event, color: '#3B82F6'};
+            events.value = [...events.value, newEvent];
+        }
+
+        // Update chat messages with AI response
+        updateChatMessages([...updatedMessages, {
+            id: Date.now(),
+            content: result.data.chat.choices[0].message.content,
+            timestamp: new Date(),
+            isUser: false
+        }]);
+    } catch (error) {
+        console.error('AI Chat Error:', error);
+        updateChatMessages([...updatedMessages, {
+            id: Date.now(),
+            content: 'Sorry, I encountered an error. ' + (error.response?.data?.error || error.message || 'Please try again.'),
+            timestamp: new Date(),
+            isUser: false
+        }]);
+    }
 }
 </script>
 
@@ -163,8 +233,10 @@ function updateChatMessages(messages) {
                             <AiChat
                                 v-else
                                 :messages="chatMessages"
+                                :events="events"
                                 class="h-full"
                                 @update:messages="updateChatMessages"
+                                @update:events="updateEvents"
                             />
                         </Transition>
                     </div>

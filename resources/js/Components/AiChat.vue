@@ -60,10 +60,15 @@ const props = defineProps({
         type: Array,
         required: true,
         default: () => []
+    },
+    events: {
+        type: Array,
+        required: true,
+        default: () => []
     }
 });
 
-const emit = defineEmits(['update:messages']);
+const emit = defineEmits(['update:messages', 'update:events']);
 const newMessage = ref('');
 
 // Scroll to bottom when new messages are added
@@ -107,12 +112,23 @@ async function sendMessage() {
             throw new Error(result.data.error);
         }
 
-        emit('update:messages', [...updatedMessages, {
+        // Update messages with AI response
+        const aiResponse = result.data.chat.choices[0].message.content;
+        const newMessages = [...updatedMessages, {
             id: Date.now(),
-            content: result.data.choices[0].message.content,
+            content: aiResponse,
             timestamp: new Date(),
             isUser: false
-        }]);
+        }];
+        emit('update:messages', newMessages);
+
+        // If an event was created, update the events list
+        if (result.data.event) {
+            console.log('Event received from API:', result.data.event);
+            const updatedEvents = [...props.events, result.data.event];
+            console.log('Emitting updated events:', updatedEvents);
+            emit('update:events', updatedEvents);
+        }
     } catch (error) {
         console.error('AI Chat Error:', error);
         emit('update:messages', [...updatedMessages, {

@@ -54,21 +54,14 @@ class OpenAIController extends Controller
             ];
 
             $messages = [
-                ['role' => 'system', 'content' => 'You are a helpful assistant that can create calendar events. When users ask to schedule something, always use the create_calendar_event function.'],
+                ['role' => 'system', 'content' => 'You are a helpful assistant that can create calendar events. When users ask to schedule something, always use the create_calendar_event function. When they mention "today", use today\'s actual date (' . date('Y-m-d') . ').'],
                 ['role' => 'user', 'content' => $request->input('prompt')],
             ];
-
-            \Log::info('Sending request to OpenAI:', ['prompt' => $request->input('prompt')]);
 
             $result = OpenAI::chat()->create([
                 'model' => 'gpt-3.5-turbo',
                 'messages' => $messages,
                 'tools' => [$tools]
-            ]);
-
-            \Log::info('Received response from OpenAI:', [
-                'has_tool_calls' => isset($result->choices[0]->message->toolCalls),
-                'message_content' => $result->choices[0]->message->content ?? null
             ]);
 
             // If no function call is made, return the normal response
@@ -79,16 +72,21 @@ class OpenAIController extends Controller
             $functionName = $result->choices[0]->message->toolCalls[0]->function->name;
             $functionParams = json_decode($result->choices[0]->message->toolCalls[0]->function->arguments);
 
-            \Log::info('Function call details:', [
+            \Log::debug('Processing function call', [
                 'function' => $functionName,
                 'params' => (array)$functionParams
             ]);
 
             $messages[] = $result->choices[0]->message->toArray();
+
+            // Execute the function and get the result
+            $functionResult = $this->$functionName($functionParams);
+
+            // Add the function result to messages
             $messages[] = [
                 'role' => 'tool',
                 'tool_call_id' => $result->choices[0]->message->toolCalls[0]->id,
-                'content' => $this->$functionName($functionParams)
+                'content' => $functionResult['message']
             ];
 
             $result2 = OpenAI::chat()->create([
@@ -97,34 +95,49 @@ class OpenAIController extends Controller
                 'tools' => [$tools]
             ]);
 
-            return response()->json($result2);
-        } catch (Exception $e) {
-            \Log::error('OpenAI request failed:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            // Include both the chat completion and event data in response
+            return response()->json([
+                'chat' => $result2,
+                'event' => $functionResult['event'] ?? null
             ]);
+
+        } catch (Exception $e) {
+            \Log::error('OpenAI request failed', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
             return response()->json([
                 'error' => 'Failed to process your request. ' . $e->getMessage()
             ], 500);
         }
     }
 
-    private function create_calendar_event($params): string
+    private function create_calendar_event($params): array
     {
         try {
-            \Log::info('Creating calendar event with params:', (array)$params);
-
-            $startDateTime = Carbon::parse($params->date . ' ' . $params->start_time);
-            $endDateTime = Carbon::parse($params->date . ' ' . $params->end_time);
-
-            \Log::info('Parsed dates:', [
-                'start' => $startDateTime->format('Y-m-d H:i:s'),
-                'end' => $endDateTime->format('Y-m-d H:i:s')
-            ]);
+            // Handle relative dates
+            if ($params->date === date('Y-m-d')) {
+                // If the date is today's date, ensure we use today's actual date
+                $today = Carbon::today();
+                $startDateTime = Carbon::parse($today->format('Y-m-d') . ' ' . $params->start_time);
+                $endDateTime = Carbon::parse($today->format('Y-m-d') . ' ' . $params->end_time);
+            } else {
+                $startDateTime = Carbon::parse($params->date . ' ' . $params->start_time);
+                $endDateTime = Carbon::parse($params->date . ' ' . $params->end_time);
+            }
 
             if ($endDateTime <= $startDateTime) {
-                \Log::warning('Invalid time range: end time is before or equal to start time');
-                return "Error: End time must be after start time.";
+                \Log::warning('Invalid event time range', [
+                    'start' => $startDateTime->format('Y-m-d H:i:s'),
+                    'end' => $endDateTime->format('Y-m-d H:i:s')
+                ]);
+                return [
+                    'message' => "Error: End time must be after start time.",
+                    'event' => null
+                ];
             }
 
             $eventData = [
@@ -133,17 +146,29 @@ class OpenAIController extends Controller
                 'end_datetime' => $endDateTime->format('Y-m-d H:i:s')
             ];
 
-            \Log::info('Creating event with data:', $eventData);
-            $event = $this->eventService->createEvent($eventData);
-            \Log::info('Event created successfully:', ['event_id' => $event['id'] ?? null]);
+            \Log::debug('Creating event with data:', $eventData);
 
-            return "Successfully created event: '{$params->title}' on {$params->date} from {$params->start_time} to {$params->end_time}";
-        } catch (Exception $e) {
-            \Log::error('Failed to create event:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            $event = $this->eventService->createEvent($eventData);
+
+            \Log::debug('Event created successfully', [
+                'event_data' => $event,
+                'event_id' => $event['id'] ?? null
             ]);
-            return "Failed to create event: " . $e->getMessage();
+
+            return [
+                'message' => "Successfully created event: '{$params->title}' on {$startDateTime->format('Y-m-d')} from {$params->start_time} to {$params->end_time}",
+                'event' => $event
+            ];
+        } catch (Exception $e) {
+            \Log::error('Event creation failed', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'params' => (array)$params
+            ]);
+            return [
+                'message' => "Failed to create event: " . $e->getMessage(),
+                'event' => null
+            ];
         }
     }
 
