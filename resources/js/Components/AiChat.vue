@@ -103,6 +103,10 @@ async function sendMessage() {
             prompt: userMessage
         });
 
+        if (result.data.error) {
+            throw new Error(result.data.error);
+        }
+
         emit('update:messages', [...updatedMessages, {
             id: Date.now(),
             content: result.data.choices[0].message.content,
@@ -110,9 +114,10 @@ async function sendMessage() {
             isUser: false
         }]);
     } catch (error) {
+        console.error('AI Chat Error:', error);
         emit('update:messages', [...updatedMessages, {
             id: Date.now(),
-            content: 'Sorry, I encountered an error. Please try again.',
+            content: 'Sorry, I encountered an error. ' + (error.response?.data?.error || error.message || 'Please try again.'),
             timestamp: new Date(),
             isUser: false
         }]);

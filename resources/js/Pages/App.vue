@@ -132,14 +132,14 @@ function updateChatMessages(messages) {
                             >
                                 <path
                                     v-if="isAiChatFullscreen"
-                                    d="M9 9L4 4m0 0h5M4 4v5M15 9l5-5m0 0h-5m5 0v5M9 15l-5 5m0 0h5m-5 0v-5m11 5l5-5m0 0h-5m5 0v5"
+                                    d="M4 8V4h4M4 4l6 6M16 4h4v4M20 4l-6 6M4 16v4h4M4 20l6-6M16 20h4v-4M20 20l-6-6"
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                     stroke-width="2"
                                 />
                                 <path
                                     v-else
-                                    d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                                    d="M4 8V4h4M4 4l6 6M16 4h4v4M20 4l-6 6M4 16v4h4M4 20l6-6M16 20h4v-4M20 20l-6-6"
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                     stroke-width="2"

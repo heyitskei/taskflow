@@ -1,7 +1,7 @@
 <template>
     <div class="h-full flex flex-col">
         <div class="flex-1 overflow-auto">
-            <div v-if="news.length === 0" class="flex-1 flex flex-col items-center justify-center p-4">
+            <div v-if="news.length === 0" class="flex-1 flex flex-col items-center justify-center p-4 pt-16">
                 <div class="text-gray-400 mb-2">
                     📰
                 </div>
