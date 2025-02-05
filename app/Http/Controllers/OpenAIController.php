@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use OpenAI\Laravel\Facades\OpenAI;
 
 class OpenAIController extends Controller
@@ -54,55 +55,65 @@ class OpenAIController extends Controller
             ];
 
             $messages = [
-                ['role' => 'system', 'content' => 'You are a helpful assistant that can create calendar events. When users ask to schedule something, always use the create_calendar_event function. When they mention "today", use today\'s actual date (' . date('Y-m-d') . ').'],
+                [
+                    'role' => 'system',
+                    'content' => 'You are a helpful assistant that can create calendar events. When users ask to schedule something, create exactly one calendar event using the create_calendar_event function. When they mention "today", use today\'s actual date (' . date('Y-m-d') . '). After creating an event, simply acknowledge its creation - do not create additional events unless specifically requested by the user.'
+                ],
                 ['role' => 'user', 'content' => $request->input('prompt')],
             ];
 
-            $result = OpenAI::chat()->create([
+            $createdEvents = [];
+            $maxIterations = 3;
+            $iterations = 0;
+
+            do {
+                $iterations++;
+
+                $result = OpenAI::chat()->create([
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => $messages,
+                    'tools' => [$tools]
+                ]);
+
+                $assistantMessage = $result->choices[0]->message;
+                $messages[] = $assistantMessage->toArray();
+
+                if (!isset($assistantMessage->toolCalls)) {
+                    break;
+                }
+
+                foreach ($assistantMessage->toolCalls as $toolCall) {
+                    $functionName = $toolCall->function->name;
+                    $functionParams = json_decode($toolCall->function->arguments);
+
+                    $functionResult = $this->$functionName($functionParams);
+
+                    $messages[] = [
+                        'role' => 'tool',
+                        'tool_call_id' => $toolCall->id,
+                        'content' => $functionResult['message']
+                    ];
+
+                    if ($functionResult['event']) {
+                        $createdEvents[] = $functionResult['event'];
+                    }
+                }
+
+            } while ($iterations < $maxIterations && empty($createdEvents));
+
+            $finalResult = OpenAI::chat()->create([
                 'model' => 'gpt-3.5-turbo',
                 'messages' => $messages,
                 'tools' => [$tools]
             ]);
 
-            // If no function call is made, return the normal response
-            if (!isset($result->choices[0]->message->toolCalls)) {
-                return response()->json($result);
-            }
-
-            $functionName = $result->choices[0]->message->toolCalls[0]->function->name;
-            $functionParams = json_decode($result->choices[0]->message->toolCalls[0]->function->arguments);
-
-            \Log::debug('Processing function call', [
-                'function' => $functionName,
-                'params' => (array)$functionParams
-            ]);
-
-            $messages[] = $result->choices[0]->message->toArray();
-
-            // Execute the function and get the result
-            $functionResult = $this->$functionName($functionParams);
-
-            // Add the function result to messages
-            $messages[] = [
-                'role' => 'tool',
-                'tool_call_id' => $result->choices[0]->message->toolCalls[0]->id,
-                'content' => $functionResult['message']
-            ];
-
-            $result2 = OpenAI::chat()->create([
-                'model' => 'gpt-3.5-turbo',
-                'messages' => $messages,
-                'tools' => [$tools]
-            ]);
-
-            // Include both the chat completion and event data in response
             return response()->json([
-                'chat' => $result2,
-                'event' => $functionResult['event'] ?? null
+                'chat' => $finalResult,
+                'events' => $createdEvents
             ]);
 
         } catch (Exception $e) {
-            \Log::error('OpenAI request failed', [
+            Log::error('OpenAI request failed', [
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
                 'file' => $e->getFile(),
@@ -118,9 +129,7 @@ class OpenAIController extends Controller
     private function create_calendar_event($params): array
     {
         try {
-            // Handle relative dates
             if ($params->date === date('Y-m-d')) {
-                // If the date is today's date, ensure we use today's actual date
                 $today = Carbon::today();
                 $startDateTime = Carbon::parse($today->format('Y-m-d') . ' ' . $params->start_time);
                 $endDateTime = Carbon::parse($today->format('Y-m-d') . ' ' . $params->end_time);
@@ -130,10 +139,6 @@ class OpenAIController extends Controller
             }
 
             if ($endDateTime <= $startDateTime) {
-                \Log::warning('Invalid event time range', [
-                    'start' => $startDateTime->format('Y-m-d H:i:s'),
-                    'end' => $endDateTime->format('Y-m-d H:i:s')
-                ]);
                 return [
                     'message' => "Error: End time must be after start time.",
                     'event' => null
@@ -146,34 +151,23 @@ class OpenAIController extends Controller
                 'end_datetime' => $endDateTime->format('Y-m-d H:i:s')
             ];
 
-            \Log::debug('Creating event with data:', $eventData);
-
             $event = $this->eventService->createEvent($eventData);
-
-            \Log::debug('Event created successfully', [
-                'event_data' => $event,
-                'event_id' => $event['id'] ?? null
-            ]);
 
             return [
                 'message' => "Successfully created event: '{$params->title}' on {$startDateTime->format('Y-m-d')} from {$params->start_time} to {$params->end_time}",
                 'event' => $event
             ];
         } catch (Exception $e) {
-            \Log::error('Event creation failed', [
+            Log::error('Event creation failed', [
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
                 'params' => (array)$params
             ]);
+
             return [
                 'message' => "Failed to create event: " . $e->getMessage(),
                 'event' => null
             ];
         }
-    }
-
-    public function get_weather($location)
-    {
-        return "its sunny, everything is fine in $location";
     }
 }

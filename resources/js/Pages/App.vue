@@ -76,10 +76,10 @@ async function sendMessage() {
             throw new Error(result.data.error);
         }
 
-        // If an event was created, update the events list
-        if (result.data.event) {
-            const newEvent = {...result.data.event, color: '#3B82F6'};
-            events.value = [...events.value, newEvent];
+        // If events were created, update the events list
+        if (result.data.events && result.data.events.length > 0) {
+            const newEvents = result.data.events.map(event => ({...event, color: '#3B82F6'}));
+            events.value = [...events.value, ...newEvents];
         }
 
         // Update chat messages with AI response
