@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use App\Services\EventService;
 use Carbon\Carbon;
 use Exception;
@@ -26,8 +27,27 @@ class OpenAIController extends Controller
                 [
                     "type" => "function",
                     "function" => [
+                        "name" => "search_events",
+                        "description" => "Search for existing events by title. Use this function first when you need to find an event to update.",
+                        "parameters" => [
+                            "type" => "object",
+                            "properties" => [
+                                "title" => [
+                                    "type" => "string",
+                                    "description" => "Title of the event to search for"
+                                ]
+                            ],
+                            "required" => ["title"],
+                            "additionalProperties" => false
+                        ],
+                        "strict" => true
+                    ]
+                ],
+                [
+                    "type" => "function",
+                    "function" => [
                         "name" => "create_calendar_event",
-                        "description" => "Create a new event in the calendar. Use this function when the user wants to schedule or create a calendar event.",
+                        "description" => "Create a new event in the calendar. Use this function ONLY when the user wants to create a NEW calendar event.",
                         "parameters" => [
                             "type" => "object",
                             "properties" => [
@@ -58,44 +78,47 @@ class OpenAIController extends Controller
                     "type" => "function",
                     "function" => [
                         "name" => "update_calendar_event",
-                        "description" => "Update an existing event in the calendar. Use this function when the user wants to update an existing calendar event.",
+                        "description" => "Update an existing event in the calendar. Must be called after finding the event using search_events.",
                         "parameters" => [
                             "type" => "object",
                             "properties" => [
+                                "event_id" => [
+                                    "type" => "integer",
+                                    "description" => "ID of the existing event to update (obtained from search_events)"
+                                ],
                                 "title" => [
                                     "type" => "string",
-                                    "description" => "Title of the event"
+                                    "description" => "New title of the event"
                                 ],
                                 "date" => [
                                     "type" => "string",
-                                    "description" => "Date of the event in YYYY-MM-DD format"
+                                    "description" => "New date of the event in YYYY-MM-DD format"
                                 ],
                                 "start_time" => [
                                     "type" => "string",
-                                    "description" => "Start time in HH:mm format (24-hour)"
+                                    "description" => "New start time in HH:mm format (24-hour)"
                                 ],
                                 "end_time" => [
                                     "type" => "string",
-                                    "description" => "End time in HH:mm format (24-hour)"
+                                    "description" => "New end time in HH:mm format (24-hour)"
                                 ]
                             ],
-                            "required" => ["title", "date", "start_time", "end_time"],
+                            "required" => ["event_id", "title", "date", "start_time", "end_time"],
                             "additionalProperties" => false
                         ],
                         "strict" => true
                     ]
                 ]
             ];
-//            dd($tools[0]['type']);
 
             $messages = [
                 [
                     'role' => 'system',
                     'content' => 'You are a helpful assistant that can create and update calendar events.
-                                  When users ask to schedule something, create exactly one calendar event using the create_calendar_event function.
+                                  For NEW events: When users ask to schedule or create something new, use the create_calendar_event function.
+                                  For EXISTING events: First use search_events to find the event, then use update_calendar_event with the found event\'s ID.
                                   When they mention "today", use today\'s actual date (' . date('Y-m-d') . ').
-                                  After creating an event, simply acknowledge its creation - do not create additional events unless specifically requested by the user.
-                                  When users ask to update an existing event, find and update that exact calendar event using the update_calendar_event function.'
+                                  After any action, acknowledge what was done and wait for further instructions.'
                 ],
                 ['role' => 'user', 'content' => $request->input('prompt')],
             ];
@@ -216,6 +239,9 @@ class OpenAIController extends Controller
     private function update_calendar_event($params): array
     {
         try {
+            $eventToUpdate = $this->search_events($params);
+//            dd($eventToUpdate);
+
             if ($params->date === date('Y-m-d')) {
                 $today = Carbon::today();
                 $startDateTime = Carbon::parse($today->format('Y-m-d') . ' ' . $params->start_time);
@@ -238,7 +264,7 @@ class OpenAIController extends Controller
                 'end_datetime' => $endDateTime->format('Y-m-d H:i:s')
             ];
 
-            $event = $this->eventService->updateEvent($params, $eventData);
+            $event = $this->eventService->updateEvent($eventToUpdate, $eventData);
 
             return [
                 'message' => "Successfully updated event: '{$params->title}' on {$startDateTime->format('Y-m-d')} from {$params->start_time} to {$params->end_time}",
@@ -253,6 +279,43 @@ class OpenAIController extends Controller
 
             return [
                 'message' => "Failed to create event: " . $e->getMessage(),
+                'event' => null
+            ];
+        }
+    }
+
+    private function search_events($params): Event|array
+    {
+        try {
+            $events = Event::where('title', 'like', '%' . $params->title . '%')
+                ->get()
+                ->map(function ($event) {
+                    return [
+                        'id' => $event->id,
+                        'title' => $event->title,
+                        'date' => Carbon::parse($event->start_datetime)->format('Y-m-d'),
+                        'start_time' => Carbon::parse($event->start_datetime)->format('H:i'),
+                        'end_time' => Carbon::parse($event->end_datetime)->format('H:i')
+                    ];
+                });
+
+            if ($events->isEmpty()) {
+                return [
+                    'message' => "No events found with title containing '{$params->title}'",
+                    'event' => null
+                ];
+            }
+
+            return $events;
+        } catch (Exception $e) {
+            Log::error('Event search failed', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'params' => (array)$params
+            ]);
+
+            return [
+                'message' => "Failed to search events: " . $e->getMessage(),
                 'event' => null
             ];
         }
