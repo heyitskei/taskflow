@@ -23,46 +23,85 @@ class OpenAIController extends Controller
     {
         try {
             $tools = [
-                "type" => "function",
-                "function" => [
-                    "name" => "create_calendar_event",
-                    "description" => "Create a new event in the calendar. Use this function when the user wants to schedule or create a calendar event.",
-                    "parameters" => [
-                        "type" => "object",
-                        "properties" => [
-                            "title" => [
-                                "type" => "string",
-                                "description" => "Title of the event"
+                [
+                    "type" => "function",
+                    "function" => [
+                        "name" => "create_calendar_event",
+                        "description" => "Create a new event in the calendar. Use this function when the user wants to schedule or create a calendar event.",
+                        "parameters" => [
+                            "type" => "object",
+                            "properties" => [
+                                "title" => [
+                                    "type" => "string",
+                                    "description" => "Title of the event"
+                                ],
+                                "date" => [
+                                    "type" => "string",
+                                    "description" => "Date of the event in YYYY-MM-DD format"
+                                ],
+                                "start_time" => [
+                                    "type" => "string",
+                                    "description" => "Start time in HH:mm format (24-hour)"
+                                ],
+                                "end_time" => [
+                                    "type" => "string",
+                                    "description" => "End time in HH:mm format (24-hour)"
+                                ]
                             ],
-                            "date" => [
-                                "type" => "string",
-                                "description" => "Date of the event in YYYY-MM-DD format"
-                            ],
-                            "start_time" => [
-                                "type" => "string",
-                                "description" => "Start time in HH:mm format (24-hour)"
-                            ],
-                            "end_time" => [
-                                "type" => "string",
-                                "description" => "End time in HH:mm format (24-hour)"
-                            ]
+                            "required" => ["title", "date", "start_time", "end_time"],
+                            "additionalProperties" => false
                         ],
-                        "required" => ["title", "date", "start_time", "end_time"],
-                        "additionalProperties" => false
-                    ],
-                    "strict" => true
+                        "strict" => true
+                    ]
+                ],
+                [
+                    "type" => "function",
+                    "function" => [
+                        "name" => "update_calendar_event",
+                        "description" => "Update an existing event in the calendar. Use this function when the user wants to update an existing calendar event.",
+                        "parameters" => [
+                            "type" => "object",
+                            "properties" => [
+                                "title" => [
+                                    "type" => "string",
+                                    "description" => "Title of the event"
+                                ],
+                                "date" => [
+                                    "type" => "string",
+                                    "description" => "Date of the event in YYYY-MM-DD format"
+                                ],
+                                "start_time" => [
+                                    "type" => "string",
+                                    "description" => "Start time in HH:mm format (24-hour)"
+                                ],
+                                "end_time" => [
+                                    "type" => "string",
+                                    "description" => "End time in HH:mm format (24-hour)"
+                                ]
+                            ],
+                            "required" => ["title", "date", "start_time", "end_time"],
+                            "additionalProperties" => false
+                        ],
+                        "strict" => true
+                    ]
                 ]
             ];
+//            dd($tools[0]['type']);
 
             $messages = [
                 [
                     'role' => 'system',
-                    'content' => 'You are a helpful assistant that can create calendar events. When users ask to schedule something, create exactly one calendar event using the create_calendar_event function. When they mention "today", use today\'s actual date (' . date('Y-m-d') . '). After creating an event, simply acknowledge its creation - do not create additional events unless specifically requested by the user.'
+                    'content' => 'You are a helpful assistant that can create and update calendar events.
+                                  When users ask to schedule something, create exactly one calendar event using the create_calendar_event function.
+                                  When they mention "today", use today\'s actual date (' . date('Y-m-d') . ').
+                                  After creating an event, simply acknowledge its creation - do not create additional events unless specifically requested by the user.
+                                  When users ask to update an existing event, find and update that exact calendar event using the update_calendar_event function.'
                 ],
                 ['role' => 'user', 'content' => $request->input('prompt')],
             ];
 
             $createdEvents = [];
+            $updatedEvents = [];
             $maxIterations = 3;
             $iterations = 0;
 
@@ -72,7 +111,7 @@ class OpenAIController extends Controller
                 $result = OpenAI::chat()->create([
                     'model' => 'gpt-3.5-turbo',
                     'messages' => $messages,
-                    'tools' => [$tools]
+                    'tools' => $tools
                 ]);
 
                 $assistantMessage = $result->choices[0]->message;
@@ -95,16 +134,19 @@ class OpenAIController extends Controller
                     ];
 
                     if ($functionResult['event']) {
-                        $createdEvents[] = $functionResult['event'];
+                        if ($functionName === 'create_calendar_event') {
+                            $createdEvents[] = $functionResult['event'];
+                        } else if ($functionName === 'update_calendar_event') {
+                            $updatedEvents[] = $functionResult['event'];
+                        }
                     }
                 }
-
-            } while ($iterations < $maxIterations && empty($createdEvents));
+            } while ($iterations < $maxIterations && (empty($createdEvents) && empty($updatedEvents)));
 
             $finalResult = OpenAI::chat()->create([
                 'model' => 'gpt-3.5-turbo',
                 'messages' => $messages,
-                'tools' => [$tools]
+                'tools' => $tools
             ]);
 
             return response()->json([
@@ -155,6 +197,51 @@ class OpenAIController extends Controller
 
             return [
                 'message' => "Successfully created event: '{$params->title}' on {$startDateTime->format('Y-m-d')} from {$params->start_time} to {$params->end_time}",
+                'event' => $event
+            ];
+        } catch (Exception $e) {
+            Log::error('Event creation failed', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'params' => (array)$params
+            ]);
+
+            return [
+                'message' => "Failed to create event: " . $e->getMessage(),
+                'event' => null
+            ];
+        }
+    }
+
+    private function update_calendar_event($params): array
+    {
+        try {
+            if ($params->date === date('Y-m-d')) {
+                $today = Carbon::today();
+                $startDateTime = Carbon::parse($today->format('Y-m-d') . ' ' . $params->start_time);
+                $endDateTime = Carbon::parse($today->format('Y-m-d') . ' ' . $params->end_time);
+            } else {
+                $startDateTime = Carbon::parse($params->date . ' ' . $params->start_time);
+                $endDateTime = Carbon::parse($params->date . ' ' . $params->end_time);
+            }
+
+            if ($endDateTime <= $startDateTime) {
+                return [
+                    'message' => "Error: End time must be after start time.",
+                    'event' => null
+                ];
+            }
+
+            $eventData = [
+                'title' => $params->title,
+                'start_datetime' => $startDateTime->format('Y-m-d H:i:s'),
+                'end_datetime' => $endDateTime->format('Y-m-d H:i:s')
+            ];
+
+            $event = $this->eventService->updateEvent($params, $eventData);
+
+            return [
+                'message' => "Successfully updated event: '{$params->title}' on {$startDateTime->format('Y-m-d')} from {$params->start_time} to {$params->end_time}",
                 'event' => $event
             ];
         } catch (Exception $e) {
