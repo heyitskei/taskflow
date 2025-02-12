@@ -104,6 +104,7 @@ describe('DailyDetailedView Component', () => {
                 event: {
                     id: 2,
                     title: 'New Test Event',
+                    description: '',
                     start_datetime: '2024-01-01 14:00:00',
                     end_datetime: '2024-01-01 15:00:00'
                 }
@@ -115,20 +116,18 @@ describe('DailyDetailedView Component', () => {
         await saveButton.trigger('click');
         await wrapper.vm.$nextTick();
 
-        // Verify the API call
         expect(axios.post).toHaveBeenCalledWith('/events', {
             title: 'New Test Event',
+            description: '',
             start_datetime: '2024-01-01 14:00:00',
             end_datetime: '2024-01-01 15:00:00'
         });
     });
 
     test('validates event times', async () => {
-        // Mock window.alert
         const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {
         });
 
-        // Click add event button
         const addButton = wrapper.find('button.w-full.py-2.px-4.bg-blue-50');
         await addButton.trigger('click');
         await wrapper.vm.$nextTick();
@@ -147,7 +146,7 @@ describe('DailyDetailedView Component', () => {
         await saveButton.trigger('click');
         await wrapper.vm.$nextTick();
 
-        expect(alertMock).toHaveBeenCalledWith('End time must be after start time');
+        expect(alertMock).toHaveBeenCalledWith('End time must not be before start time');
         alertMock.mockRestore();
     });
 

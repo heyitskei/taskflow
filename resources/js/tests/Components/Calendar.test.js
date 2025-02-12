@@ -44,8 +44,8 @@ describe('Calendar Component', () => {
 
     test('displays current month and year', async () => {
         await wrapper.vm.$nextTick();
-        const monthElement = wrapper.find('h2.text-xl.font-semibold');
-        const yearElement = wrapper.find('span.text-sm.text-gray-500');
+        const monthElement = wrapper.find('button.text-xl.font-semibold');
+        const yearElement = wrapper.find('button.text-sm.text-gray-500');
         expect(monthElement.exists()).toBe(true);
         expect(yearElement.exists()).toBe(true);
         expect(monthElement.text()).toBe('January');
@@ -67,37 +67,35 @@ describe('Calendar Component', () => {
         await prevButton.trigger('click');
         await wrapper.vm.$nextTick();
 
-        const monthElement = wrapper.find('h2.text-xl.font-semibold');
-        const yearElement = wrapper.find('span.text-sm.text-gray-500');
+        const monthElement = wrapper.find('button.text-xl.font-semibold');
+        const yearElement = wrapper.find('button.text-sm.text-gray-500');
         expect(monthElement.text()).toBe('December');
         expect(yearElement.text()).toBe('2023');
     });
 
     test('can navigate to next month', async () => {
-        const nextButton = wrapper.find('button:last-child');
+        const nextButton = wrapper.findAll('button').at(-1);
         await nextButton.trigger('click');
         await wrapper.vm.$nextTick();
 
-        const monthElement = wrapper.find('h2.text-xl.font-semibold');
-        const yearElement = wrapper.find('span.text-sm.text-gray-500');
+        const monthElement = wrapper.find('button.text-xl.font-semibold');
+        const yearElement = wrapper.find('button.text-sm.text-gray-500');
         expect(monthElement.text()).toBe('February');
         expect(yearElement.text()).toBe('2024');
     });
 
     test('can reset to today', async () => {
-        // First navigate away from current month
-        const nextButton = wrapper.find('button:last-child');
+        const nextButton = wrapper.findAll('button').at(-1);
         await nextButton.trigger('click');
         await wrapper.vm.$nextTick();
 
-        // Then click today button
         const todayButton = wrapper.find('button.text-sm.font-medium.text-blue-600');
         expect(todayButton.exists()).toBe(true);
         await todayButton.trigger('click');
         await wrapper.vm.$nextTick();
 
-        const monthElement = wrapper.find('h2.text-xl.font-semibold');
-        const yearElement = wrapper.find('span.text-sm.text-gray-500');
+        const monthElement = wrapper.find('button.text-xl.font-semibold');
+        const yearElement = wrapper.find('button.text-sm.text-gray-500');
         expect(monthElement.text()).toBe('January');
         expect(yearElement.text()).toBe('2024');
     });
@@ -200,8 +198,8 @@ describe('Calendar Component', () => {
         await firstDayCell.trigger('click');
         await wrapper.vm.$nextTick();
 
-        const monthElement = wrapper.find('h2.text-xl.font-semibold');
-        const yearElement = wrapper.find('span.text-sm.text-gray-500');
+        const monthElement = wrapper.find('button.text-xl.font-semibold');
+        const yearElement = wrapper.find('button.text-sm.text-gray-500');
         expect(monthElement.text()).toBe('December');
         expect(yearElement.text()).toBe('2023');
     });
@@ -217,8 +215,8 @@ describe('Calendar Component', () => {
         await lastDayCell.trigger('click');
         await wrapper.vm.$nextTick();
 
-        const monthElement = wrapper.find('h2.text-xl.font-semibold');
-        const yearElement = wrapper.find('span.text-sm.text-gray-500');
+        const monthElement = wrapper.find('button.text-xl.font-semibold');
+        const yearElement = wrapper.find('button.text-sm.text-gray-500');
         expect(monthElement.text()).toBe('February');
         expect(yearElement.text()).toBe('2024');
     });
