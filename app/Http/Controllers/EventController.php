@@ -42,7 +42,7 @@ class EventController extends Controller
             'title' => 'required|string',
             'description' => 'nullable|string',
             'start_datetime' => 'required|date',
-            'end_datetime' => 'required|date|after:start_datetime',
+            'end_datetime' => 'required|date|after_or_equal:start_datetime',
         ]);
 
         $event = $this->eventService->createEvent($validated);
@@ -75,7 +75,7 @@ class EventController extends Controller
                 'title' => 'required|string',
                 'description' => 'nullable|string',
                 'start_datetime' => 'required|date_format:Y-m-d H:i:s',
-                'end_datetime' => 'required|date_format:Y-m-d H:i:s|after:start_datetime',
+                'end_datetime' => 'required|date_format:Y-m-d H:i:s|after_or_equal:start_datetime',
             ]);
 
             $updatedEvent = $this->eventService->updateEvent($event, $validated);

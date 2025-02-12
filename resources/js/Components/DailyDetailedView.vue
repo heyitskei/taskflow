@@ -202,8 +202,8 @@ async function saveEvent() {
         0
     ));
 
-    if (endDate <= startDate) {
-        alert('End time must be after start time');
+    if (endDate < startDate) {
+        alert('End time must not be before start time');
         return;
     }
 
