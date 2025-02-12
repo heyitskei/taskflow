@@ -123,8 +123,19 @@ async function sendMessage() {
         emit('update:messages', newMessages);
 
         if (result.data.events && result.data.events.length > 0) {
-            const updatedEvents = [...props.events, ...result.data.events];
-            emit('update:events', updatedEvents);
+            console.log('Events received from API:', result.data.events);
+            const updatedEvents = props.events.map(existingEvent => {
+                const updatedEvent = result.data.events.find(e => e.id === existingEvent.id);
+                return updatedEvent || existingEvent;
+            });
+
+            const newEvents = result.data.events.filter(
+                newEvent => !props.events.some(e => e.id === newEvent.id)
+            );
+
+            const finalEvents = [...updatedEvents, ...newEvents];
+            console.log('Emitting updated events:', finalEvents);
+            emit('update:events', finalEvents);
         }
     } catch (error) {
         console.error('AI Chat Error:', error);

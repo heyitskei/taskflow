@@ -180,7 +180,7 @@ class OpenAIController extends Controller
 
             return response()->json([
                 'chat' => $finalResult,
-                'events' => $createdEvents
+                'events' => array_merge($createdEvents, $updatedEvents)
             ]);
 
         } catch (Exception $e) {
@@ -300,19 +300,43 @@ class OpenAIController extends Controller
 
     private function search_events($params): array
     {
-        $event = Event::where('title', 'like', '%' . $params->title . '%')
-            ->first();
+        $events = Event::where('title', 'like', '%' . $params->title . '%')
+            ->get()
+            ->map(function ($event) {
+                $formatted = $this->eventService->formatEvent($event);
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'description' => $event->description,
+                    'date' => Carbon::parse($formatted['start_datetime'])->format('Y-m-d'),
+                    'start_time' => Carbon::parse($formatted['start_datetime'])->format('H:i'),
+                    'end_time' => Carbon::parse($formatted['end_datetime'])->format('H:i')
+                ];
+            });
 
-        if (!$event) {
+        if ($events->isEmpty()) {
             return [
-                'message' => "No event found with title containing '{$params->title}'",
+                'message' => "No events found with title containing '{$params->title}'",
                 'event' => null
             ];
         }
 
+        if ($events->count() === 1) {
+            $event = $events->first();
+            return [
+                'message' => "Found event: '{$event['title']}' (ID: {$event['id']}) on {$event['date']} from {$event['start_time']} to {$event['end_time']}",
+                'event' => $event
+            ];
+        }
+
+        $eventsList = $events->map(function ($event) {
+            return "- '{$event['title']}' (ID: {$event['id']}) on {$event['date']} from {$event['start_time']} to {$event['end_time']}";
+        })->join("\n");
+
         return [
-            'message' => "Found event: '{$event->title}' (ID: {$event->id})",
-            'event' => $this->eventService->formatEvent($event)
+            'message' => "Found multiple matching events:\n{$eventsList}\nPlease specify which event you want to update by providing more details or the exact title.",
+            'events' => $events->toArray(),
+            'event' => null
         ];
     }
 }
