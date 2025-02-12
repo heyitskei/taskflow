@@ -20,9 +20,14 @@
                     {{ formatTime(message.timestamp) }}
                 </div>
             </div>
+
+            <div v-if="isLoading"
+                 class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                <span class="text-sm text-gray-600 dark:text-gray-300">AI is thinking...</span>
+            </div>
         </div>
 
-        <!-- Input -->
         <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
             <div class="flex gap-2 items-end">
                 <textarea
@@ -34,10 +39,11 @@
                            hover:border-gray-300 dark:hover:border-gray-500"
                     placeholder="Ask your AI assistant..."
                     rows="2"
+                    :disabled="isLoading"
                     @keydown.enter.prevent="sendMessage"
                 ></textarea>
                 <button
-                    :disabled="!newMessage.trim()"
+                    :disabled="!newMessage.trim() || isLoading"
                     class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 text-white rounded-lg
                            hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] whitespace-nowrap
                            disabled:opacity-50 disabled:cursor-not-allowed text-sm
@@ -70,8 +76,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:messages', 'update:events']);
 const newMessage = ref('');
+const isLoading = ref(false);
 
-// Scroll to bottom when new messages are added
 watch(() => props.messages.length, () => {
     nextTick(() => {
         const container = document.querySelector('.messages-container');
@@ -90,7 +96,7 @@ function formatTime(timestamp) {
 }
 
 async function sendMessage() {
-    if (!newMessage.value.trim()) return;
+    if (!newMessage.value.trim() || isLoading.value) return;
 
     const updatedMessages = [...props.messages, {
         id: Date.now(),
@@ -102,6 +108,7 @@ async function sendMessage() {
     emit('update:messages', updatedMessages);
     const userMessage = newMessage.value;
     newMessage.value = '';
+    isLoading.value = true;
 
     try {
         const result = await axios.post('/api/openai', {
@@ -145,6 +152,8 @@ async function sendMessage() {
             timestamp: new Date(),
             isUser: false
         }]);
+    } finally {
+        isLoading.value = false;
     }
 }
 </script>
