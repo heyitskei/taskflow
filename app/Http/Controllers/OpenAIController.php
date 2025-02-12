@@ -246,7 +246,14 @@ class OpenAIController extends Controller
     private function update_calendar_event($params): array
     {
         try {
-            $eventToUpdate = $this->search_events($params);
+            $event = Event::find($params->event_id);
+
+            if (!$event) {
+                return [
+                    'message' => "Error: Event not found with ID {$params->event_id}",
+                    'event' => null
+                ];
+            }
 
             if ($params->date === date('Y-m-d')) {
                 $today = Carbon::today();
@@ -271,60 +278,41 @@ class OpenAIController extends Controller
                 'end_datetime' => $endDateTime->format('Y-m-d H:i:s')
             ];
 
-            $event = $this->eventService->updateEvent($eventToUpdate, $eventData);
+            $updatedEvent = $this->eventService->updateEvent($event, $eventData);
 
             return [
                 'message' => "Successfully updated event: '{$params->title}' on {$startDateTime->format('Y-m-d')} from {$params->start_time} to {$params->end_time}",
-                'event' => $event
+                'event' => $updatedEvent
             ];
         } catch (Exception $e) {
-            Log::error('Event creation failed', [
+            Log::error('Event update failed', [
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
                 'params' => (array)$params
             ]);
 
             return [
-                'message' => "Failed to create event: " . $e->getMessage(),
+                'message' => "Failed to update event: " . $e->getMessage(),
                 'event' => null
             ];
         }
     }
 
-    private function search_events($params): Event|array
+    private function search_events($params): array
     {
-        try {
-            $events = Event::where('title', 'like', '%' . $params->title . '%')
-                ->get()
-                ->map(function ($event) {
-                    return [
-                        'id' => $event->id,
-                        'title' => $event->title,
-                        'date' => Carbon::parse($event->start_datetime)->format('Y-m-d'),
-                        'start_time' => Carbon::parse($event->start_datetime)->format('H:i'),
-                        'end_time' => Carbon::parse($event->end_datetime)->format('H:i')
-                    ];
-                });
+        $event = Event::where('title', 'like', '%' . $params->title . '%')
+            ->first();
 
-            if ($events->isEmpty()) {
-                return [
-                    'message' => "No events found with title containing '{$params->title}'",
-                    'event' => null
-                ];
-            }
-
-            return $events;
-        } catch (Exception $e) {
-            Log::error('Event search failed', [
-                'error' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'params' => (array)$params
-            ]);
-
+        if (!$event) {
             return [
-                'message' => "Failed to search events: " . $e->getMessage(),
+                'message' => "No event found with title containing '{$params->title}'",
                 'event' => null
             ];
         }
+
+        return [
+            'message' => "Found event: '{$event->title}' (ID: {$event->id})",
+            'event' => $this->eventService->formatEvent($event)
+        ];
     }
 }
