@@ -20,6 +20,7 @@ class EventService
         return [
             'id' => $event->id,
             'title' => $event->title,
+            'description' => $event->description,
             'start_datetime' => Carbon::parse($event->start_datetime)->format('Y-m-d H:i:s'),
             'end_datetime' => Carbon::parse($event->end_datetime)->format('Y-m-d H:i:s'),
             'created_at' => $event->created_at,

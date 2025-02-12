@@ -40,7 +40,6 @@ class OpenAIController extends Controller
                             "required" => ["title"],
                             "additionalProperties" => false
                         ],
-                        "strict" => true
                     ]
                 ],
                 [
@@ -54,6 +53,10 @@ class OpenAIController extends Controller
                                 "title" => [
                                     "type" => "string",
                                     "description" => "Title of the event"
+                                ],
+                                "description" => [
+                                    "type" => "string",
+                                    "description" => "Optional description or details of the event. Can include notes, agenda, or any additional information."
                                 ],
                                 "date" => [
                                     "type" => "string",
@@ -71,7 +74,6 @@ class OpenAIController extends Controller
                             "required" => ["title", "date", "start_time", "end_time"],
                             "additionalProperties" => false
                         ],
-                        "strict" => true
                     ]
                 ],
                 [
@@ -90,6 +92,10 @@ class OpenAIController extends Controller
                                     "type" => "string",
                                     "description" => "New title of the event"
                                 ],
+                                "description" => [
+                                    "type" => "string",
+                                    "description" => "Optional description or details of the event. Can include notes, agenda, or any additional information."
+                                ],
                                 "date" => [
                                     "type" => "string",
                                     "description" => "New date of the event in YYYY-MM-DD format"
@@ -106,7 +112,6 @@ class OpenAIController extends Controller
                             "required" => ["event_id", "title", "date", "start_time", "end_time"],
                             "additionalProperties" => false
                         ],
-                        "strict" => true
                     ]
                 ]
             ];
@@ -118,6 +123,7 @@ class OpenAIController extends Controller
                                   For NEW events: When users ask to schedule or create something new, use the create_calendar_event function.
                                   For EXISTING events: First use search_events to find the event, then use update_calendar_event with the found event\'s ID.
                                   When they mention "today", use today\'s actual date (' . date('Y-m-d') . ').
+                                  You can add descriptions to events to include additional details, notes, or agenda items.
                                   After any action, acknowledge what was done and wait for further instructions.'
                 ],
                 ['role' => 'user', 'content' => $request->input('prompt')],
@@ -212,6 +218,7 @@ class OpenAIController extends Controller
 
             $eventData = [
                 'title' => $params->title,
+                'description' => $params->description ?? null,
                 'start_datetime' => $startDateTime->format('Y-m-d H:i:s'),
                 'end_datetime' => $endDateTime->format('Y-m-d H:i:s')
             ];
@@ -240,7 +247,6 @@ class OpenAIController extends Controller
     {
         try {
             $eventToUpdate = $this->search_events($params);
-//            dd($eventToUpdate);
 
             if ($params->date === date('Y-m-d')) {
                 $today = Carbon::today();
@@ -260,6 +266,7 @@ class OpenAIController extends Controller
 
             $eventData = [
                 'title' => $params->title,
+                'description' => $params->description ?? null,
                 'start_datetime' => $startDateTime->format('Y-m-d H:i:s'),
                 'end_datetime' => $endDateTime->format('Y-m-d H:i:s')
             ];
