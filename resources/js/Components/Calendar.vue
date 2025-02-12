@@ -239,10 +239,12 @@ const calendarDays = computed(() => {
     const days = [];
     const firstDay = new Date(currentYear.value, currentMonth.value, 1);
     const lastDay = new Date(currentYear.value, currentMonth.value + 1, 0);
-    let start = firstDay.getDay();
+    const start = firstDay.getDay();
 
-    for (let i = start - 1; i >= 0; i--) {
-        const date = new Date(currentYear.value, currentMonth.value - 1, lastDay.getDate() - i);
+    const prevMonthLastDay = new Date(currentYear.value, currentMonth.value, 0);
+
+    for (let i = 0; i < start; i++) {
+        const date = new Date(currentYear.value, currentMonth.value - 1, prevMonthLastDay.getDate() - start + i + 1);
         days.push({date, isCurrentMonth: false});
     }
 
@@ -251,7 +253,7 @@ const calendarDays = computed(() => {
         days.push({date, isCurrentMonth: true});
     }
 
-    const totalDays = Math.ceil((start + lastDay.getDate()) / 7) * 7;
+    const totalDays = Math.ceil(days.length / 7) * 7;
     const remainingDays = totalDays - days.length;
 
     for (let i = 1; i <= remainingDays; i++) {
