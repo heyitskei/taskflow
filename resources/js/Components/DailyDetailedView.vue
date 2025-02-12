@@ -154,7 +154,23 @@ const dayEvents = computed(() => {
 function startNewEvent() {
     editingEventId.value = null;
     isEditing.value = true;
-    newEvent.value = {title: '', description: '', start: '', end: ''};
+
+    const now = new Date();
+    const currentHour = now.getHours().toString().padStart(2, '0');
+    const currentMinute = now.getMinutes().toString().padStart(2, '0');
+    const currentTime = `${currentHour}:${currentMinute}`;
+
+    const endDate = new Date(now.getTime() + 60 * 60 * 1000);
+    const endHour = endDate.getHours().toString().padStart(2, '0');
+    const endMinute = endDate.getMinutes().toString().padStart(2, '0');
+    const endTime = `${endHour}:${endMinute}`;
+
+    newEvent.value = {
+        title: '',
+        description: '',
+        start: currentTime,
+        end: endTime
+    };
 }
 
 function startEditEvent(event) {
