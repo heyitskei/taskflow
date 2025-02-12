@@ -30,7 +30,10 @@ export async function createEvent(eventData) {
 export async function updateEvent(eventId, eventData) {
     try {
         const response = await axios.put(`/events/${eventId}`, eventData);
-        return response.data.event;
+        return {
+            ...response.data.event,
+            color: '#3B82F6'
+        };
     } catch {
         throw new Error('Failed to update event');
     }

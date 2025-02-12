@@ -17,12 +17,20 @@
                 >
                     <div class="flex justify-between items-start">
                         <span class="font-medium text-gray-800">{{ event.title }}</span>
-                        <button
-                            class="text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-red-50 rounded-full"
-                            @click="handleDeleteEvent(event)"
-                        >
-                            ×
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button
+                                class="text-gray-400 hover:text-blue-500 transition-colors duration-200 p-1 hover:bg-blue-50 rounded-full"
+                                @click="startEditEvent(event)"
+                            >
+                                ✎
+                            </button>
+                            <button
+                                class="text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-red-50 rounded-full"
+                                @click="handleDeleteEvent(event)"
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
                     <div class="flex-1 text-sm text-gray-600">
                         {{ formatTime(event.start_datetime) }} - {{ formatTime(event.end_datetime) }}
@@ -78,7 +86,7 @@
                                    hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
                             @click="saveEvent"
                         >
-                            Save
+                            {{ editingEventId ? 'Update' : 'Save' }}
                         </button>
                     </div>
                 </div>
@@ -110,7 +118,7 @@
 
 <script setup>
 import {computed, onMounted, ref} from 'vue';
-import {createEvent, deleteEvent, fetchEvents} from '../services/eventService';
+import {createEvent, deleteEvent, fetchEvents, updateEvent} from '../services/eventService';
 import {formatFullDate, formatTime, toLocalDate, toUTCString} from '../utils/dateTime';
 
 const props = defineProps({
@@ -127,6 +135,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:events']);
 const isEditing = ref(false);
+const editingEventId = ref(null);
 const newEvent = ref({title: '', description: '', start: '', end: ''});
 
 const formattedDate = computed(() => {
@@ -143,12 +152,29 @@ const dayEvents = computed(() => {
 });
 
 function startNewEvent() {
+    editingEventId.value = null;
     isEditing.value = true;
     newEvent.value = {title: '', description: '', start: '', end: ''};
 }
 
+function startEditEvent(event) {
+    editingEventId.value = event.id;
+    isEditing.value = true;
+    const eventDate = toLocalDate(event.start_datetime);
+    const endDate = toLocalDate(event.end_datetime);
+
+    newEvent.value = {
+        title: event.title,
+        description: event.description || '',
+        start: eventDate.toTimeString().slice(0, 5),
+        end: endDate.toTimeString().slice(0, 5)
+    };
+}
+
 function cancelEdit() {
     isEditing.value = false;
+    editingEventId.value = null;
+    newEvent.value = {title: '', description: '', start: '', end: ''};
 }
 
 async function saveEvent() {
@@ -189,12 +215,22 @@ async function saveEvent() {
     };
 
     try {
-        const event = await createEvent(eventData);
-        emit('update:events', [...props.events, event]);
+        let event;
+        if (editingEventId.value) {
+            event = await updateEvent(editingEventId.value, eventData);
+            emit('update:events', props.events.map(e =>
+                e.id === editingEventId.value ? {...event, color: '#3B82F6'} : e
+            ));
+        } else {
+            event = await createEvent(eventData);
+            emit('update:events', [...props.events, event]);
+        }
+
         isEditing.value = false;
+        editingEventId.value = null;
         newEvent.value = {title: '', description: '', start: '', end: ''};
     } catch {
-        alert('Failed to create event. Please try again.');
+        alert(editingEventId.value ? 'Failed to update event. Please try again.' : 'Failed to create event. Please try again.');
     }
 }
 
