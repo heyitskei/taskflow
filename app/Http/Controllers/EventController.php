@@ -40,6 +40,7 @@ class EventController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string',
+            'description' => 'nullable|string',
             'start_datetime' => 'required|date',
             'end_datetime' => 'required|date|after:start_datetime',
         ]);
@@ -72,6 +73,7 @@ class EventController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string',
+                'description' => 'nullable|string',
                 'start_datetime' => 'required|date_format:Y-m-d H:i:s',
                 'end_datetime' => 'required|date_format:Y-m-d H:i:s|after:start_datetime',
             ]);

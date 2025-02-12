@@ -15,7 +15,7 @@ class EventService
         });
     }
 
-    private function formatEvent(Event $event): array
+    public function formatEvent(Event $event): array
     {
         return [
             'id' => $event->id,
