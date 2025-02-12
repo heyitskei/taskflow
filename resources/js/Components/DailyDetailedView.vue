@@ -27,6 +27,9 @@
                     <div class="flex-1 text-sm text-gray-600">
                         {{ formatTime(event.start_datetime) }} - {{ formatTime(event.end_datetime) }}
                     </div>
+                    <div v-if="event.description" class="mt-2 text-sm text-gray-700 whitespace-pre-wrap">
+                        {{ event.description }}
+                    </div>
                 </div>
 
                 <div v-if="isEditing" class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
@@ -36,6 +39,13 @@
                                transition-all duration-200 bg-gray-50"
                         placeholder="Event title"
                     >
+                    <textarea
+                        v-model="newEvent.description"
+                        class="w-full mb-3 px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                               transition-all duration-200 bg-gray-50"
+                        placeholder="Event description (optional)"
+                        rows="3"
+                    ></textarea>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm text-gray-600 mb-1">Start Time</label>
@@ -117,7 +127,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:events']);
 const isEditing = ref(false);
-const newEvent = ref({title: '', start: '', end: ''});
+const newEvent = ref({title: '', description: '', start: '', end: ''});
 
 const formattedDate = computed(() => {
     if (!props.selectedDate) return '';
@@ -134,7 +144,7 @@ const dayEvents = computed(() => {
 
 function startNewEvent() {
     isEditing.value = true;
-    newEvent.value = {title: '', start: '', end: ''};
+    newEvent.value = {title: '', description: '', start: '', end: ''};
 }
 
 function cancelEdit() {
@@ -173,6 +183,7 @@ async function saveEvent() {
 
     const eventData = {
         title: newEvent.value.title,
+        description: newEvent.value.description,
         start_datetime: toUTCString(startDate),
         end_datetime: toUTCString(endDate)
     };
@@ -181,7 +192,7 @@ async function saveEvent() {
         const event = await createEvent(eventData);
         emit('update:events', [...props.events, event]);
         isEditing.value = false;
-        newEvent.value = {title: '', start: '', end: ''};
+        newEvent.value = {title: '', description: '', start: '', end: ''};
     } catch {
         alert('Failed to create event. Please try again.');
     }
