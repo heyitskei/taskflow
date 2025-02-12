@@ -401,6 +401,7 @@ async function handleDrop(event, targetDate) {
 
     const eventData = {
         title: draggedEvent.title,
+        description: draggedEvent.description,
         start_datetime: toUTCString(newStartDate),
         end_datetime: toUTCString(newEndDate)
     };

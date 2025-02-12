@@ -122,11 +122,8 @@ async function sendMessage() {
         }];
         emit('update:messages', newMessages);
 
-        // If an event was created, update the events list
-        if (result.data.event) {
-            console.log('Event received from API:', result.data.event);
-            const updatedEvents = [...props.events, result.data.event];
-            console.log('Emitting updated events:', updatedEvents);
+        if (result.data.events && result.data.events.length > 0) {
+            const updatedEvents = [...props.events, ...result.data.events];
             emit('update:events', updatedEvents);
         }
     } catch (error) {
