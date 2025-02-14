@@ -46,7 +46,7 @@ class OpenAIController extends Controller
                     "type" => "function",
                     "function" => [
                         "name" => "create_calendar_event",
-                        "description" => "Create a new event in the calendar. Use this function ONLY when the user wants to create a NEW calendar event.",
+                        "description" => "Create a new event in the calendar. Use this function ONLY when the user wants to create a NEW calendar event. Don't make any assumptions, ask the user to clarify if any of the required fields are missing.",
                         "parameters" => [
                             "type" => "object",
                             "properties" => [
@@ -127,6 +127,8 @@ class OpenAIController extends Controller
                                   After any action, acknowledge what was done and wait for further instructions.'
                 ],
                 ['role' => 'user', 'content' => $request->input('prompt')],
+                // TODO: include all of the chat history AND + the user prompt
+                // each request grows larger because it includes all chat history
             ];
 
             $createdEvents = [];
@@ -171,6 +173,11 @@ class OpenAIController extends Controller
                     }
                 }
             } while ($iterations < $maxIterations && (empty($createdEvents) && empty($updatedEvents)));
+
+            //TODO: AI cannot exit the loop to actually prompt the user for clarification?
+            // use diff. signal from openai that it's done
+
+            dd($messages);
 
             $finalResult = OpenAI::chat()->create([
                 'model' => 'gpt-3.5-turbo',

@@ -13,9 +13,10 @@
                 <div v-for="item in news"
                      :key="item.id"
                      class="bg-white dark:bg-gray-900 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100 dark:border-gray-700">
-                    <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ item.title }}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ item.content }}</p>
-                    <div class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ formatTime(item.timestamp) }}</div>
+                    <a :href="item.url" class="cursor-pointer hover:underline" target="_blank"><h3
+                        class="font-medium text-gray-900 dark:text-gray-100">{{ item.title }}</h3></a>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ item.description }}</p>
+                    <div class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ formatTime(item.published_at) }}</div>
                 </div>
             </div>
         </div>
@@ -23,7 +24,8 @@
 </template>
 
 <script setup>
-import {ref} from 'vue';
+import {onMounted, ref} from 'vue';
+import axios from "axios";
 
 const news = ref([]);
 
@@ -34,4 +36,15 @@ function formatTime(timestamp) {
         hour12: true
     });
 }
+
+onMounted(async () => {
+    const params = new URLSearchParams();
+    params.append('api_token', import.meta.env.VITE_THE_NEWS_API);
+    params.append('locale', 'ca');
+    params.append('language', 'en');
+    params.append('categories', 'tech,sports');
+    const response = await axios.get('https://api.thenewsapi.com/v1/news/top', {params})
+
+    news.value = response.data.data
+})
 </script>
