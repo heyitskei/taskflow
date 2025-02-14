@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use OpenAI\Laravel\Facades\OpenAI;
 
@@ -24,6 +25,24 @@ class OpenAIController extends Controller
     {
         try {
             $tools = [
+                [
+                    "type" => "function",
+                    "function" => [
+                        "name" => "fetch_news",
+                        "description" => "Fetch news for a user specified category",
+                        "parameters" => [
+                            "type" => "object",
+                            "properties" => [
+                                "category" => [
+                                    "type" => "string",
+                                    "description" => "A category for which to fetch news for a given category",
+                                ]
+                            ],
+                            "required" => ["category"],
+                            "additionalProperties" => false
+                        ],
+                    ]
+                ],
                 [
                     "type" => "function",
                     "function" => [
@@ -206,6 +225,7 @@ class OpenAIController extends Controller
 
     private function create_calendar_event($params): array
     {
+        dd($params);
         try {
             if ($params->date === date('Y-m-d')) {
                 $today = Carbon::today();
@@ -345,5 +365,19 @@ class OpenAIController extends Controller
             'events' => $events->toArray(),
             'event' => null
         ];
+    }
+
+    public function fetch_news($params)
+    {
+        //  pass in category
+        $category = $params->category;
+        // call the endpoint with the specified category
+        $refetchedNews = Http::get('https://api.thenewsapi.com/v1/news/top',
+            [
+                'api_token' => env('VITE_THE_NEWS_API'),
+                'categories' => $category
+            ]);
+        dd($refetchedNews->body());
+        // reload the component
     }
 }
