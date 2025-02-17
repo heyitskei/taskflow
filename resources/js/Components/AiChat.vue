@@ -1,5 +1,5 @@
 <template>
-    <div class="h-full flex flex-col p-4 bg-white dark:bg-gray-800 rounded-lg">
+    <div class="h-full flex flex-col p-4 bg-white dark:bg-gray-800 rounded-xl">
         <!-- Messages -->
         <div class="flex-1 overflow-auto space-y-4 messages-container">
             <div v-for="message in messages"
