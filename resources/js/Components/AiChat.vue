@@ -1,5 +1,6 @@
 <template>
-    <div class="h-full flex flex-col p-4 bg-white dark:bg-gray-800 rounded-xl">
+    <div
+        class="h-full flex flex-col p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl">
         <!-- Messages -->
         <div class="flex-1 overflow-auto space-y-4 messages-container">
             <div v-for="message in messages"
@@ -11,20 +12,19 @@
                          'bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700'
                  ]"
             >
-                <div :class="message.isUser ? 'text-gray-900 dark:text-gray-50' : 'text-gray-900 dark:text-gray-50'"
-                     class="text-sm">
+                <div class="text-sm text-gray-900 dark:text-gray-50">
                     {{ message.content }}
                 </div>
-                <div :class="message.isUser ? 'text-gray-600 dark:text-gray-300' : 'text-gray-600 dark:text-gray-300'"
-                     class="text-xs mt-1">
+                <div class="text-xs mt-1 text-gray-600 dark:text-gray-400">
                     {{ formatTime(message.timestamp) }}
                 </div>
             </div>
 
             <div v-if="isLoading"
                  class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div class="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                <span class="text-sm text-gray-600 dark:text-gray-300">AI is thinking...</span>
+                <div
+                    class="animate-spin h-4 w-4 border-2 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full"></div>
+                <span class="text-sm text-gray-600 dark:text-gray-400">AI is thinking...</span>
             </div>
         </div>
 
@@ -44,10 +44,11 @@
                 ></textarea>
                 <button
                     :disabled="!newMessage.trim() || isLoading"
-                    class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 text-white rounded-lg
+                    class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg
                            hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] whitespace-nowrap
                            disabled:opacity-50 disabled:cursor-not-allowed text-sm
-                           hover:from-blue-700 hover:to-purple-700 dark:hover:from-blue-600 dark:hover:to-purple-600"
+                           hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500
+                           dark:hover:from-blue-600 dark:hover:to-purple-600"
                     @click="sendMessage"
                 >
                     Send

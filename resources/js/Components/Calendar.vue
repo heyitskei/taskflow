@@ -1,12 +1,14 @@
 <template>
-    <div class="bg-white rounded-xl shadow-lg p-4 transition-all duration-300 hover:shadow-xl h-full flex flex-col">
+    <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all duration-300 hover:shadow-xl h-full flex flex-col">
         <!-- Calendar Header -->
         <div class="flex items-center justify-between mb-6">
             <button
-                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200"
+                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700
+                       transition-colors duration-200 text-gray-600 dark:text-gray-400"
                 @click="previousMonth"
             >
-                <span class="text-gray-600">←</span>
+                <span>←</span>
             </button>
 
             <div class="flex flex-col items-center relative">
@@ -40,7 +42,7 @@
                                     'px-2 py-1.5 text-sm rounded transition-colors duration-200',
                                     currentMonth === index
                                         ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
-                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                                 ]"
                                 @click="selectMonth(index)"
                             >
@@ -53,7 +55,7 @@
                 <div class="relative inline-block">
                     <button
                         ref="yearPickerButton"
-                        class="text-sm text-gray-500 mt-0.5 hover:text-gray-700 dark:hover:text-gray-300
+                        class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 hover:text-gray-700 dark:hover:text-gray-300
                                transition-colors duration-200 px-2 py-0.5 rounded"
                         @click="toggleYearPicker"
                     >
@@ -80,7 +82,7 @@
                                     'px-2 py-1 text-sm rounded transition-colors duration-200',
                                     currentYear === year
                                         ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
-                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                                 ]"
                                 @click="selectYear(year)"
                             >
@@ -93,16 +95,18 @@
 
             <div class="flex items-center gap-2">
                 <button
-                    class="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors duration-200"
+                    class="px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900
+                           rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors duration-200"
                     @click="resetToToday"
                 >
                     Today
                 </button>
                 <button
-                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200"
+                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700
+                           transition-colors duration-200 text-gray-600 dark:text-gray-400"
                     @click="nextMonth"
                 >
-                    <span class="text-gray-600">→</span>
+                    <span>→</span>
                 </button>
             </div>
         </div>
@@ -114,22 +118,22 @@
                 <div
                     v-for="day in weekDays"
                     :key="day"
-                    class="text-center py-2 text-sm font-medium text-gray-500"
+                    class="text-center py-2 text-sm font-medium text-gray-500 dark:text-gray-400"
                 >
                     {{ day }}
                 </div>
             </div>
 
             <!-- Calendar Grid -->
-            <div class="flex-1 grid grid-cols-7 gap-[1px] bg-gray-100 rounded-lg p-[1px]">
+            <div class="flex-1 grid grid-cols-7 gap-[1px] bg-gray-100 dark:bg-gray-700 rounded-lg p-[1px]">
                 <div
                     v-for="day in calendarDays"
                     :key="day.date"
                     :class="[
-                        'bg-white p-1.5 flex flex-col min-h-[90px] transition-all duration-200',
-                        day.isCurrentMonth ? 'hover:bg-gray-50' : 'opacity-50 hover:opacity-75',
-                        isSelectedDate(day.date) && 'ring-2 ring-blue-400 bg-blue-50',
-                        isToday(day.date) && !isSelectedDate(day.date) && 'ring-1 ring-blue-200'
+                        'bg-white dark:bg-gray-800 p-1.5 flex flex-col min-h-[90px] transition-all duration-200',
+                        day.isCurrentMonth ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : 'opacity-50 hover:opacity-75',
+                        isSelectedDate(day.date) && 'ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900',
+                        isToday(day.date) && !isSelectedDate(day.date) && 'ring-1 ring-blue-200 dark:ring-blue-700'
                     ]"
                     @click="handleDayClick(day)"
                     @dragleave="handleDragLeave"
@@ -141,14 +145,17 @@
                         <span
                             :class="[
                                 'text-sm font-medium rounded-full w-7 h-7 flex items-center justify-center',
-                                isToday(day.date) ? 'bg-blue-600 text-white' : 'text-gray-700'
+                                isToday(day.date)
+                                    ? 'bg-blue-600 text-white'
+                                    : 'text-gray-700 dark:text-gray-300'
                             ]"
                         >
                             {{ day.date.getDate() }}
                         </span>
                         <div
                             v-if="getDayEvents(day.date).length > 0"
-                            class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"
+                            class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700
+                                   text-gray-600 dark:text-gray-400"
                         >
                             {{ getDayEvents(day.date).length }}
                         </div>
@@ -161,7 +168,8 @@
                                 v-if="index < 2"
                                 :style="{ backgroundColor: event.color || '#3B82F6' }"
                                 :title="event.title"
-                                class="text-xs px-2 py-1 rounded text-white truncate cursor-move transition-all duration-200"
+                                class="text-xs px-2 py-1 rounded text-white truncate cursor-move transition-all duration-200
+                                       hover:opacity-90 hover:shadow-sm"
                                 draggable="true"
                                 @dragstart="handleDragStart($event, event)"
                                 @dragend="handleDragEnd"
@@ -171,7 +179,8 @@
                         </template>
                         <div
                             v-if="getDayEvents(day.date).length > 2"
-                            class="text-xs text-gray-500 px-2"
+                            class="text-xs text-blue-600 dark:text-blue-400 px-2 hover:text-blue-800 dark:hover:text-blue-300
+                                   cursor-pointer transition-colors duration-200"
                         >
                             +{{ getDayEvents(day.date).length - 2 }} more
                         </div>
