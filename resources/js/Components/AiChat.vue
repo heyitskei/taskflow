@@ -1,7 +1,6 @@
 <template>
     <div
         class="h-full flex flex-col p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl">
-        <!-- Messages -->
         <div class="flex-1 overflow-auto space-y-4 messages-container">
             <div v-for="message in messages"
                  :key="message.id"
@@ -120,7 +119,6 @@ async function sendMessage() {
             throw new Error(result.data.error);
         }
 
-        // Update messages with AI response
         const aiResponse = result.data.chat.choices[0].message.content;
         const newMessages = [...updatedMessages, {
             id: Date.now(),

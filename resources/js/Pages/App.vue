@@ -253,7 +253,7 @@ async function sendMessage() {
 
                 <!-- Right Column -->
                 <div v-show="!isAiChatFullscreen || activeTab !== 'ai'" class="col-span-3 flex flex-col gap-6 min-h-0">
-                    <div class="flex-[2] min-h-0 overflow-auto">
+                    <div class="flex-[2] min-h-0">
                         <DailyDetailedView
                             v-model:events="events"
                             :selected-date="selectedDate"

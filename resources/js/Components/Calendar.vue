@@ -1,7 +1,6 @@
 <template>
     <div
         class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all duration-300 hover:shadow-xl h-full flex flex-col">
-        <!-- Calendar Header -->
         <div class="flex items-center justify-between mb-6">
             <button
                 class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700
@@ -111,9 +110,7 @@
             </div>
         </div>
 
-        <!-- Calendar Body -->
         <div class="flex-1 flex flex-col min-h-0">
-            <!-- Weekday Headers -->
             <div class="grid grid-cols-7 mb-2">
                 <div
                     v-for="day in weekDays"
@@ -124,8 +121,7 @@
                 </div>
             </div>
 
-            <!-- Calendar Grid -->
-            <div class="flex-1 grid grid-cols-7 gap-[1px] bg-gray-100 dark:bg-gray-700 rounded-lg p-[1px]">
+            <div class="flex-1 grid grid-cols-7 gap-[2px] bg-gray-100 dark:bg-gray-700 rounded-lg p-[1px]">
                 <div
                     v-for="day in calendarDays"
                     :key="day.date"
@@ -140,7 +136,6 @@
                     @dragover="handleDragOver($event, day.date)"
                     @drop="handleDrop($event, day.date)"
                 >
-                    <!-- Day Header -->
                     <div class="flex items-center justify-between mb-1">
                         <span
                             :class="[
@@ -161,7 +156,6 @@
                         </div>
                     </div>
 
-                    <!-- Events -->
                     <div class="flex-1 space-y-1 overflow-hidden">
                         <template v-for="(event, index) in getDayEvents(day.date)" :key="event.id">
                             <div
