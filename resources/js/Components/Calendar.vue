@@ -268,10 +268,31 @@ const calendarDays = computed(() => {
 });
 
 function getDayEvents(date) {
-    return props.events.filter(event => {
-        const eventDate = toLocalDate(event.start_datetime);
-        return eventDate.toDateString() === date.toDateString();
-    });
+    return props.events
+        .filter(event => {
+            const eventDate = toLocalDate(event.start_datetime);
+            return eventDate.toDateString() === date.toDateString();
+        })
+        .sort((a, b) => {
+            const timeA = new Date(a.start_datetime);
+            const timeB = new Date(b.start_datetime);
+
+            const hourA = timeA.getHours() % 12 || 12;
+            const hourB = timeB.getHours() % 12 || 12;
+
+            const isAMA = timeA.getHours() < 12;
+            const isAMB = timeB.getHours() < 12;
+
+            if (isAMA !== isAMB) {
+                return isAMA ? -1 : 1;
+            }
+
+            if (hourA !== hourB) {
+                return hourA - hourB;
+            }
+
+            return timeA.getMinutes() - timeB.getMinutes();
+        });
 }
 
 function selectMonth(monthIndex) {
