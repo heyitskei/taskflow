@@ -157,18 +157,18 @@ class OpenAIController extends Controller
 
             do {
                 $iterations++;
-//                $messages = [...$messages];
 
                 $result = OpenAI::chat()->create([
                     'model' => 'gpt-3.5-turbo',
                     'messages' => $messages,
-                    'tools' => $tools
+                    'tools' => $tools,
+                    'store' => true
                 ]);
 
                 $assistantMessage = $result->choices[0]->message;
                 $messages[] = $assistantMessage->toArray();
 
-                if (!isset($assistantMessage->toolCalls)) {
+                if (empty($assistantMessage->toolCalls)) {
                     break;
                 }
 
@@ -206,7 +206,8 @@ class OpenAIController extends Controller
             $finalResult = OpenAI::chat()->create([
                 'model' => 'gpt-3.5-turbo',
                 'messages' => $messages,
-                'tools' => $tools
+                'tools' => $tools,
+                'store' => true
             ]);
 
             return response()->json([
