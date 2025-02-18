@@ -182,6 +182,7 @@ class OpenAIController extends Controller
                         'tool_call_id' => $toolCall->id,
                         'content' => $functionResult['message']
                     ];
+                    dd($messages);
 
                     if ($functionResult['event']) {
                         if ($functionName === 'create_calendar_event') {
@@ -366,6 +367,7 @@ class OpenAIController extends Controller
         ];
     }
 
+    // TODO: AI can refetch the news for a specified category
     public function fetch_news($params)
     {
         //  pass in category

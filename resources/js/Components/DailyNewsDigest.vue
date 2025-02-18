@@ -16,6 +16,7 @@
                     <a :href="item.url" class="cursor-pointer hover:underline" target="_blank"><h3
                         class="font-medium text-gray-900 dark:text-gray-100">{{ item.title }}</h3></a>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ item.description }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ item.source }}</p>
                     <div class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ formatTime(item.published_at) }}</div>
                 </div>
             </div>
@@ -43,7 +44,9 @@ onMounted(async () => {
     params.append('locale', 'us, ca, gb, ru, kr, cn');
     params.append('language', 'en');
     params.append('include_similar', 'false');
-    params.append('categories', 'science, entertainment, tech, politics');
+    params.append('search', 'AI');
+    params.append('search_fields', 'title, description, keywords, main_text');
+    params.append('categories', 'general, science, business, entertainment, tech, politics');
     const response = await axios.get('https://api.thenewsapi.com/v1/news/top', {params})
 
     news.value = response.data.data;
