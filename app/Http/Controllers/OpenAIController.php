@@ -157,6 +157,7 @@ class OpenAIController extends Controller
 
             do {
                 $iterations++;
+//                $messages = [...$messages];
 
                 $result = OpenAI::chat()->create([
                     'model' => 'gpt-3.5-turbo',
@@ -171,6 +172,10 @@ class OpenAIController extends Controller
                     break;
                 }
 
+                if (str_contains(strtolower($assistantMessage->content), 'please provide') || str_contains(strtolower($assistantMessage->content), 'more information')) {
+                    break;
+                }
+
                 foreach ($assistantMessage->toolCalls as $toolCall) {
                     $functionName = $toolCall->function->name;
                     $functionParams = json_decode($toolCall->function->arguments);
@@ -182,7 +187,6 @@ class OpenAIController extends Controller
                         'tool_call_id' => $toolCall->id,
                         'content' => $functionResult['message']
                     ];
-                    dd($messages);
 
                     if ($functionResult['event']) {
                         if ($functionName === 'create_calendar_event') {
@@ -197,7 +201,7 @@ class OpenAIController extends Controller
             //TODO: AI cannot exit the loop to actually prompt the user for clarification?
             // use diff. signal from openai that it's done
 
-            dd($messages);
+//            dd($messages);
 
             $finalResult = OpenAI::chat()->create([
                 'model' => 'gpt-3.5-turbo',
