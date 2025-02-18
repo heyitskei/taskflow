@@ -40,11 +40,12 @@ function formatTime(timestamp) {
 onMounted(async () => {
     const params = new URLSearchParams();
     params.append('api_token', import.meta.env.VITE_THE_NEWS_API);
-    params.append('locale', 'ca');
+    params.append('locale', 'us, ca, gb, ru, kr, cn');
     params.append('language', 'en');
-    params.append('categories', 'tech,sports');
+    params.append('include_similar', 'false');
+    params.append('categories', 'science, entertainment, tech, politics');
     const response = await axios.get('https://api.thenewsapi.com/v1/news/top', {params})
 
-    news.value = response.data.data
+    news.value = response.data.data;
 })
 </script>

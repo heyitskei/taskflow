@@ -225,7 +225,6 @@ class OpenAIController extends Controller
 
     private function create_calendar_event($params): array
     {
-        dd($params);
         try {
             if ($params->date === date('Y-m-d')) {
                 $today = Carbon::today();
