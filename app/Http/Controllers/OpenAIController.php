@@ -145,10 +145,17 @@ class OpenAIController extends Controller
                                   You can add descriptions to events to include additional details, notes, or agenda items.
                                   After any action, acknowledge what was done and wait for further instructions.'
                 ],
-                ['role' => 'user', 'content' => $request->input('prompt')],
-                // TODO: include all of the chat history AND + the user prompt
-                // each request grows larger because it includes all chat history
             ];
+
+            $previousMessages = $request->input('messages', []);
+            foreach ($previousMessages as $message) {
+                $messages[] = [
+                    'role' => $message['isUser'] ? 'user' : 'assistant',
+                    'content' => $message['content']
+                ];
+            }
+
+            $messages[] = ['role' => 'user', 'content' => $request->input('prompt')];
 
             $createdEvents = [];
             $updatedEvents = [];

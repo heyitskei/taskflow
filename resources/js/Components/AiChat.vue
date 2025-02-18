@@ -112,7 +112,8 @@ async function sendMessage() {
 
     try {
         const result = await axios.post('/api/openai', {
-            prompt: userMessage
+            prompt: userMessage,
+            messages: props.messages
         });
 
         if (result.data.error) {
