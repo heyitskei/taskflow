@@ -30,10 +30,10 @@ export function formatTime(date) {
         const dateObj = new Date(date);
         if (isNaN(dateObj.getTime())) return 'Invalid Date';
         return dateObj.toLocaleTimeString('en-US', {
-            hour: '2-digit',
+            hour: 'numeric',
             minute: '2-digit',
             hour12: true
-        });
+        }).replace(' ', '').toLowerCase();
     } catch {
         return 'Invalid Date';
     }

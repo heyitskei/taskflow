@@ -161,14 +161,14 @@
                             <div
                                 v-if="index < 2"
                                 :style="{ backgroundColor: event.color || '#3B82F6' }"
-                                :title="event.title"
+                                :title="`${formatTime(event.start_datetime)} - ${formatTime(event.end_datetime)}: ${event.title}`"
                                 class="text-xs px-2 py-1 rounded text-white truncate cursor-move transition-all duration-200
                                        hover:opacity-90 hover:shadow-sm"
                                 draggable="true"
                                 @dragstart="handleDragStart($event, event)"
                                 @dragend="handleDragEnd"
                             >
-                                {{ event.title }}
+                                {{ formatTime(event.start_datetime) }} {{ event.title }}
                             </div>
                         </template>
                         <div
@@ -188,7 +188,7 @@
 <script setup>
 import {computed, onMounted, onUnmounted, ref, watch} from 'vue';
 import {updateEvent} from '../services/eventService';
-import {toLocalDate, toUTCString} from '../utils/dateTime';
+import {formatTime, toLocalDate, toUTCString} from '../utils/dateTime';
 
 const props = defineProps({
     events: {
