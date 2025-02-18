@@ -163,12 +163,13 @@
                                 :style="{ backgroundColor: event.color || '#3B82F6' }"
                                 :title="`${formatTime(event.start_datetime)} - ${formatTime(event.end_datetime)}: ${event.title}`"
                                 class="text-xs px-2 py-1 rounded text-white truncate cursor-move transition-all duration-200
-                                       hover:opacity-90 hover:shadow-sm"
+                                       hover:opacity-90 hover:shadow-sm flex items-center gap-1.5"
                                 draggable="true"
                                 @dragstart="handleDragStart($event, event)"
                                 @dragend="handleDragEnd"
                             >
-                                {{ formatTime(event.start_datetime) }} {{ event.title }}
+                                <span class="w-1 h-1 rounded-full bg-white opacity-90 shrink-0"></span>
+                                <span class="truncate">{{ formatTime(event.start_datetime) }} {{ event.title }}</span>
                             </div>
                         </template>
                         <div
