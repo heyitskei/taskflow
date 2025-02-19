@@ -8,7 +8,6 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use OpenAI\Laravel\Facades\OpenAI;
 
@@ -47,16 +46,32 @@ class OpenAIController extends Controller
                     "type" => "function",
                     "function" => [
                         "name" => "search_events",
-                        "description" => "Search for existing events by title. Use this function first when you need to find an event to update.",
+                        "description" => "Search for existing events using any combination of criteria. Use this function first when you need to find an event to update. If multiple events are found, use additional criteria to narrow down the search.",
                         "parameters" => [
                             "type" => "object",
                             "properties" => [
                                 "title" => [
                                     "type" => "string",
-                                    "description" => "Title of the event to search for"
-                                ]
+                                    "description" => "Full or partial title of the event"
+                                ],
+                                "description" => [
+                                    "type" => "string",
+                                    "description" => "Full or partial description text to search for"
+                                ],
+                                "date" => [
+                                    "type" => "string",
+                                    "description" => "Date of the event in YYYY-MM-DD format"
+                                ],
+                                "start_time" => [
+                                    "type" => "string",
+                                    "description" => "Start time of the event in HH:mm format (24-hour)"
+                                ],
+                                "end_time" => [
+                                    "type" => "string",
+                                    "description" => "End time of the event in HH:mm format (24-hour)"
+                                ],
                             ],
-                            "required" => ["title"],
+                            "required" => [],
                             "additionalProperties" => false
                         ],
                     ]
@@ -179,10 +194,6 @@ class OpenAIController extends Controller
                     break;
                 }
 
-                if (str_contains(strtolower($assistantMessage->content), 'please provide') || str_contains(strtolower($assistantMessage->content), 'more information')) {
-                    break;
-                }
-
                 foreach ($assistantMessage->toolCalls as $toolCall) {
                     $functionName = $toolCall->function->name;
                     $functionParams = json_decode($toolCall->function->arguments);
@@ -195,6 +206,11 @@ class OpenAIController extends Controller
                         'content' => $functionResult['message']
                     ];
 
+//                    if ($functionName === 'fetch_news') {
+//                        if ($functionResult['news']) {
+//                            break;
+//                        }
+//                    } else
                     if ($functionResult['event']) {
                         if ($functionName === 'create_calendar_event') {
                             $createdEvents[] = $functionResult['event'];
@@ -203,22 +219,21 @@ class OpenAIController extends Controller
                         }
                     }
                 }
-            } while ($iterations < $maxIterations && (empty($createdEvents) && empty($updatedEvents)));
 
-            //TODO: AI cannot exit the loop to actually prompt the user for clarification?
-            // use diff. signal from openai that it's done
+                $result = OpenAI::chat()->create([
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => $messages,
+                    'tools' => $tools,
+                    'store' => true
+                ]);
 
-//            dd($messages);
+                $assistantMessage = $result->choices[0]->message;
+                $messages[] = $assistantMessage->toArray();
 
-            $finalResult = OpenAI::chat()->create([
-                'model' => 'gpt-3.5-turbo',
-                'messages' => $messages,
-                'tools' => $tools,
-                'store' => true
-            ]);
+            } while ($iterations < $maxIterations && !empty($assistantMessage->toolCalls));
 
             return response()->json([
-                'chat' => $finalResult,
+                'chat' => $result,
                 'events' => array_merge($createdEvents, $updatedEvents)
             ]);
 
@@ -339,23 +354,58 @@ class OpenAIController extends Controller
 
     private function search_events($params): array
     {
-        $events = Event::where('title', 'like', '%' . $params->title . '%')
-            ->get()
-            ->map(function ($event) {
-                $formatted = $this->eventService->formatEvent($event);
-                return [
-                    'id' => $event->id,
-                    'title' => $event->title,
-                    'description' => $event->description,
-                    'date' => Carbon::parse($formatted['start_datetime'])->format('Y-m-d'),
-                    'start_time' => Carbon::parse($formatted['start_datetime'])->format('H:i'),
-                    'end_time' => Carbon::parse($formatted['end_datetime'])->format('H:i')
-                ];
+        $query = Event::query();
+
+        if (isset($params->title)) {
+            $query->where('title', 'like', '%' . $params->title . '%');
+        }
+
+        if (isset($params->description)) {
+            $query->where('description', 'like', '%' . $params->description . '%');
+        }
+
+        $events = $query->get()->map(function ($event) {
+            $formatted = $this->eventService->formatEvent($event);
+            return [
+                'id' => $event->id,
+                'title' => $event->title,
+                'description' => $event->description,
+                'date' => Carbon::parse($formatted['start_datetime'])->format('Y-m-d'),
+                'start_time' => Carbon::parse($formatted['start_datetime'])->format('H:i'),
+                'end_time' => Carbon::parse($formatted['end_datetime'])->format('H:i')
+            ];
+        });
+
+        if (isset($params->date)) {
+            $events = $events->filter(function ($event) use ($params) {
+                return $event['date'] === $params->date;
             });
+        }
+
+        if (isset($params->start_time)) {
+            $events = $events->filter(function ($event) use ($params) {
+                return $event['start_time'] === $params->start_time;
+            });
+        }
+
+        if (isset($params->end_time)) {
+            $events = $events->filter(function ($event) use ($params) {
+                return $event['end_time'] === $params->end_time;
+            });
+        }
 
         if ($events->isEmpty()) {
+            $criteria = [];
+            if (isset($params->title)) $criteria[] = "title containing '{$params->title}'";
+            if (isset($params->description)) $criteria[] = "description containing '{$params->description}'";
+            if (isset($params->date)) $criteria[] = "date {$params->date}";
+            if (isset($params->start_time)) $criteria[] = "starting at {$params->start_time}";
+            if (isset($params->end_time)) $criteria[] = "ending at {$params->end_time}";
+            if (isset($params->id)) $criteria[] = "ID {$params->id}";
+
+            $criteriaStr = implode(', ', $criteria);
             return [
-                'message' => "No events found with title containing '{$params->title}'",
+                'message' => "No events found with " . $criteriaStr,
                 'event' => null
             ];
         }
@@ -363,34 +413,36 @@ class OpenAIController extends Controller
         if ($events->count() === 1) {
             $event = $events->first();
             return [
-                'message' => "Found event: '{$event['title']}' (ID: {$event['id']}) on {$event['date']} from {$event['start_time']} to {$event['end_time']}",
+                'message' => "Found event: '{$event['title']}' (ID: {$event['id']}) on {$event['date']} from {$event['start_time']} to {$event['end_time']}" .
+                    ($event['description'] ? "\nDescription: {$event['description']}" : ""),
                 'event' => $event
             ];
         }
 
         $eventsList = $events->map(function ($event) {
-            return "- '{$event['title']}' (ID: {$event['id']}) on {$event['date']} from {$event['start_time']} to {$event['end_time']}";
+            return "- '{$event['title']}' (ID: {$event['id']}) on {$event['date']} from {$event['start_time']} to {$event['end_time']}" .
+                ($event['description'] ? "\n  Description: {$event['description']}" : "");
         })->join("\n");
 
         return [
-            'message' => "Found multiple matching events:\n{$eventsList}\nPlease specify which event you want to update by providing more details or the exact title.",
+            'message' => "Found multiple matching events:\n{$eventsList}\n\nPlease provide additional details to identify the specific event (e.g., date, start time, description, or ID).",
             'events' => $events->toArray(),
             'event' => null
         ];
     }
 
     // TODO: AI can refetch the news for a specified category
-    public function fetch_news($params)
-    {
-        //  pass in category
-        $category = $params->category;
-        // call the endpoint with the specified category
-        $refetchedNews = Http::get('https://api.thenewsapi.com/v1/news/top',
-            [
-                'api_token' => env('VITE_THE_NEWS_API'),
-                'categories' => $category
-            ]);
-        dd($refetchedNews->body());
-        // reload the component
-    }
+//    public function fetch_news($params)
+//    {
+//        //  pass in category
+//        $category = $params->category;
+//        // call the endpoint with the specified category
+//        $refetchedNews = Http::get('https://api.thenewsapi.com/v1/news/top',
+//            [
+//                'api_token' => env('VITE_THE_NEWS_API'),
+//                'categories' => $category
+//            ]);
+//        dd($refetchedNews->body());
+//        // reload the component
+//    }
 }

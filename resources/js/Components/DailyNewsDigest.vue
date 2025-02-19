@@ -44,7 +44,7 @@ onMounted(async () => {
     params.append('locale', 'us, ca, gb, ru, kr, cn');
     params.append('language', 'en');
     params.append('include_similar', 'false');
-    params.append('search', 'AI');
+    // params.append('search', 'AI');
     params.append('search_fields', 'title, description, keywords, main_text');
     params.append('categories', 'general, science, business, entertainment, tech, politics');
     const response = await axios.get('https://api.thenewsapi.com/v1/news/top', {params})
