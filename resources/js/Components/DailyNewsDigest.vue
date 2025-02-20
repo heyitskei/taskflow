@@ -46,7 +46,7 @@ onMounted(async () => {
     params.append('include_similar', 'false');
     // params.append('search', 'AI');
     params.append('search_fields', 'title, description, keywords, main_text');
-    params.append('categories', 'general, science, business, entertainment, tech, politics');
+    params.append('categories', 'general, science, business, tech, politics');
     const response = await axios.get('https://api.thenewsapi.com/v1/news/top', {params})
 
     news.value = response.data.data;

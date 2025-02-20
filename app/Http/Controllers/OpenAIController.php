@@ -219,21 +219,17 @@ class OpenAIController extends Controller
                         }
                     }
                 }
+            } while ($iterations < $maxIterations && empty($createdEvents) || empty($updatedEvents));
 
-                $result = OpenAI::chat()->create([
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => $messages,
-                    'tools' => $tools,
-                    'store' => true
-                ]);
-
-                $assistantMessage = $result->choices[0]->message;
-                $messages[] = $assistantMessage->toArray();
-
-            } while ($iterations < $maxIterations && !empty($assistantMessage->toolCalls));
+            $finalResult = OpenAI::chat()->create([
+                'model' => 'gpt-3.5-turbo',
+                'messages' => $messages,
+                'tools' => $tools,
+                'store' => true
+            ]);
 
             return response()->json([
-                'chat' => $result,
+                'chat' => $finalResult,
                 'events' => array_merge($createdEvents, $updatedEvents)
             ]);
 
