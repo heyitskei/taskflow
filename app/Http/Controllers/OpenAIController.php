@@ -153,11 +153,17 @@ class OpenAIController extends Controller
             $messages = [
                 [
                     'role' => 'system',
-                    'content' => 'You are a helpful assistant that can create and update calendar events.
-                                  For NEW events: When users ask to schedule or create something new, use the create_calendar_event function.
-                                  For EXISTING events: First use search_events to find the event, then use update_calendar_event with the found event\'s ID.
-                                  When they mention "today", use today\'s actual date (' . date('Y-m-d') . ').
-                                  You can add descriptions to events to include additional details, notes, or agenda items.
+                    'content' => 'You are a helpful AI assistant that can engage in general conversation and help manage calendar events.
+                                  For calendar-related requests:
+                                  - When users ask to schedule or create something new, use the create_calendar_event function
+                                  - When users want to modify existing events, first use search_events to find the event, then use update_calendar_event
+                                  - When they mention "today", use today\'s actual date (' . date('Y-m-d') . ')
+                                  
+                                  For general conversation:
+                                  - Engage naturally without assuming every message is about calendar events
+                                  - Only use calendar functions when the user explicitly mentions scheduling, events, or calendar management
+                                  - Be friendly and conversational for non-calendar topics
+                                  
                                   After any action, acknowledge what was done and wait for further instructions.'
                 ],
             ];
