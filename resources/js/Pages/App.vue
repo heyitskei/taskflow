@@ -107,9 +107,12 @@ async function sendMessage() {
             <!-- Header -->
           <div class="mb-4 flex items-center justify-between">
             <div class="text-center flex-1">
-              <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                TaskFlow
-              </h1>
+                <div class="flex items-center justify-center gap-2">
+                    <img alt="" height="35" src="/public/assets/taskflow.svg" width="35"/>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        TaskFlow
+                    </h1>
+                </div>
               <p class="text-sm text-gray-600 dark:text-gray-400">Your AI-Powered Productivity Assistant</p>
             </div>
             <!-- Dark Mode Toggle -->
