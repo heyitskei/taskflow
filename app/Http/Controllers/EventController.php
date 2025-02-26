@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Services\EventService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -83,7 +84,7 @@ class EventController extends Controller
                 'message' => 'Event updated successfully',
                 'event' => $updatedEvent
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error updating event: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error updating event',

@@ -1,3 +1,32 @@
+<script setup>
+import {onMounted, ref} from 'vue';
+import axios from "axios";
+
+const news = ref([]);
+
+function formatTime(timestamp) {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+onMounted(async () => {
+    const params = new URLSearchParams();
+    params.append('api_token', import.meta.env.VITE_THE_NEWS_API);
+    params.append('locale', 'us, ca, gb, ru, kr, cn');
+    params.append('language', 'en');
+    params.append('include_similar', 'false');
+    // params.append('search', 'AI');
+    params.append('search_fields', 'title, description, keywords, main_text');
+    params.append('categories', 'science, business, tech');
+    const response = await axios.get('https://api.thenewsapi.com/v1/news/top', {params})
+
+    news.value = response.data.data;
+})
+</script>
+
 <template>
     <div class="h-full flex flex-col">
         <div class="flex-1 overflow-auto">
@@ -23,32 +52,3 @@
         </div>
     </div>
 </template>
-
-<script setup>
-import {onMounted, ref} from 'vue';
-import axios from "axios";
-
-const news = ref([]);
-
-function formatTime(timestamp) {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
-}
-
-onMounted(async () => {
-    const params = new URLSearchParams();
-    params.append('api_token', import.meta.env.VITE_THE_NEWS_API);
-    params.append('locale', 'us, ca, gb, ru, kr, cn');
-    params.append('language', 'en');
-    params.append('include_similar', 'false');
-    // params.append('search', 'AI');
-    params.append('search_fields', 'title, description, keywords, main_text');
-    params.append('categories', 'general, science, business, tech, politics');
-    const response = await axios.get('https://api.thenewsapi.com/v1/news/top', {params})
-
-    news.value = response.data.data;
-})
-</script>

@@ -1,137 +1,3 @@
-<template>
-    <div
-        class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all duration-300 hover:shadow-xl h-full flex flex-col">
-        <h2 class="text-xl font-semibold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Daily Detailed View
-        </h2>
-
-        <div v-if="selectedDate" class="flex-1 space-y-4 overflow-auto">
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 sticky top-0">
-                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ formattedDate }}</h3>
-            </div>
-
-            <div class="space-y-3">
-                <div
-                    v-for="event in dayEvents"
-                    :key="event.id"
-                    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4
-                           transition-all duration-200 hover:shadow-md"
-                >
-                    <div class="flex justify-between items-start">
-                        <span class="font-medium text-gray-800 dark:text-gray-200">{{ event.title }}</span>
-                        <div class="flex items-center gap-2">
-                            <button
-                                class="text-gray-400 hover:text-blue-500 transition-colors duration-200 p-1
-                                       hover:bg-blue-50 dark:hover:bg-blue-900 rounded-full"
-                                @click="startEditEvent(event)"
-                            >
-                                ✎
-                            </button>
-                            <button
-                                class="text-gray-400 hover:text-red-500 transition-colors duration-200 p-1
-                                       hover:bg-red-50 dark:hover:bg-red-900 rounded-full"
-                                @click="handleDeleteEvent(event)"
-                            >
-                                ×
-                            </button>
-                        </div>
-                    </div>
-                    <div class="flex-1 text-sm text-gray-600 dark:text-gray-400">
-                        {{ formatTime(event.start_datetime) }} - {{ formatTime(event.end_datetime) }}
-                    </div>
-                    <div v-if="event.description"
-                         class="mt-2 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                        {{ event.description }}
-                    </div>
-                </div>
-
-                <div v-if="isEditing"
-                     class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-                    <input
-                        v-model="newEvent.title"
-                        class="w-full mb-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                               focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
-                               transition-all duration-200 bg-gray-50 dark:bg-gray-900
-                               text-gray-900 dark:text-gray-100"
-                        placeholder="Event title"
-                    >
-                    <textarea
-                        v-model="newEvent.description"
-                        class="w-full mb-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                               focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
-                               transition-all duration-200 bg-gray-50 dark:bg-gray-900
-                               text-gray-900 dark:text-gray-100"
-                        placeholder="Event description (optional)"
-                        rows="3"
-                    ></textarea>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Start Time</label>
-                            <input
-                                v-model="newEvent.start"
-                                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
-                                       transition-all duration-200 bg-gray-50 dark:bg-gray-900
-                                       text-gray-900 dark:text-gray-100"
-                                type="time"
-                            >
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">End Time</label>
-                            <input
-                                v-model="newEvent.end"
-                                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
-                                       transition-all duration-200 bg-gray-50 dark:bg-gray-900
-                                       text-gray-900 dark:text-gray-100"
-                                type="time"
-                            >
-                        </div>
-                    </div>
-                    <div class="mt-4 flex justify-end space-x-2">
-                        <button
-                            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700
-                                   rounded-lg transition-colors duration-200"
-                            @click="cancelEdit"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg
-                                   hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
-                            @click="saveEvent"
-                        >
-                            {{ editingEventId ? 'Update' : 'Save' }}
-                        </button>
-                    </div>
-                </div>
-
-                <button
-                    v-else
-                    class="w-full py-2 px-4 bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg
-                           hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors duration-200 font-medium
-                           flex items-center justify-center"
-                    @click="startNewEvent"
-                >
-                    <span class="mr-2">+</span> Add Event
-                </button>
-            </div>
-        </div>
-
-        <div
-            v-else
-            class="flex-1 bg-gray-50 dark:bg-gray-700 rounded-lg p-8 flex flex-col items-center justify-center"
-        >
-            <div class="text-gray-400 dark:text-gray-500 mb-3">
-                📅
-            </div>
-            <p class="text-gray-600 dark:text-gray-400 text-center">
-                Select a date to view and manage events
-            </p>
-        </div>
-    </div>
-</template>
-
 <script setup>
 import {computed, onMounted, ref} from 'vue';
 import {createEvent, deleteEvent, fetchEvents, updateEvent} from '../services/eventService';
@@ -284,3 +150,137 @@ onMounted(async () => {
     }
 });
 </script>
+
+<template>
+    <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-all duration-300 hover:shadow-xl h-full flex flex-col">
+        <h2 class="text-xl font-semibold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Daily Detailed View
+        </h2>
+
+        <div v-if="selectedDate" class="flex-1 space-y-4 overflow-auto">
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 sticky top-0">
+                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ formattedDate }}</h3>
+            </div>
+
+            <div class="space-y-3">
+                <div
+                    v-for="event in dayEvents"
+                    :key="event.id"
+                    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4
+                           transition-all duration-200 hover:shadow-md"
+                >
+                    <div class="flex justify-between items-start">
+                        <span class="font-medium text-gray-800 dark:text-gray-200">{{ event.title }}</span>
+                        <div class="flex items-center gap-2">
+                            <button
+                                class="text-gray-400 hover:text-blue-500 transition-colors duration-200 p-1
+                                       hover:bg-blue-50 dark:hover:bg-blue-900 rounded-full"
+                                @click="startEditEvent(event)"
+                            >
+                                ✎
+                            </button>
+                            <button
+                                class="text-gray-400 hover:text-red-500 transition-colors duration-200 p-1
+                                       hover:bg-red-50 dark:hover:bg-red-900 rounded-full"
+                                @click="handleDeleteEvent(event)"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex-1 text-sm text-gray-600 dark:text-gray-400">
+                        {{ formatTime(event.start_datetime) }} - {{ formatTime(event.end_datetime) }}
+                    </div>
+                    <div v-if="event.description"
+                         class="mt-2 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        {{ event.description }}
+                    </div>
+                </div>
+
+                <div v-if="isEditing"
+                     class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+                    <input
+                        v-model="newEvent.title"
+                        class="w-full mb-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                               focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
+                               transition-all duration-200 bg-gray-50 dark:bg-gray-900
+                               text-gray-900 dark:text-gray-100"
+                        placeholder="Event title"
+                    >
+                    <textarea
+                        v-model="newEvent.description"
+                        class="w-full mb-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                               focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
+                               transition-all duration-200 bg-gray-50 dark:bg-gray-900
+                               text-gray-900 dark:text-gray-100"
+                        placeholder="Event description (optional)"
+                        rows="3"
+                    ></textarea>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Start Time</label>
+                            <input
+                                v-model="newEvent.start"
+                                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
+                                       transition-all duration-200 bg-gray-50 dark:bg-gray-900
+                                       text-gray-900 dark:text-gray-100"
+                                type="time"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">End Time</label>
+                            <input
+                                v-model="newEvent.end"
+                                class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                                       focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
+                                       transition-all duration-200 bg-gray-50 dark:bg-gray-900
+                                       text-gray-900 dark:text-gray-100"
+                                type="time"
+                            >
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-end space-x-2">
+                        <button
+                            class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700
+                                   rounded-lg transition-colors duration-200"
+                            @click="cancelEdit"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg
+                                   hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
+                            @click="saveEvent"
+                        >
+                            {{ editingEventId ? 'Update' : 'Save' }}
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    v-else
+                    class="w-full py-2 px-4 bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg
+                           hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors duration-200 font-medium
+                           flex items-center justify-center"
+                    @click="startNewEvent"
+                >
+                    <span class="mr-2">+</span> Add Event
+                </button>
+            </div>
+        </div>
+
+        <div
+            v-else
+            class="flex-1 bg-gray-50 dark:bg-gray-700 rounded-lg p-8 flex flex-col items-center justify-center"
+        >
+            <div class="text-gray-400 dark:text-gray-500 mb-3">
+                📅
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 text-center">
+                Select a date to view and manage events
+            </p>
+        </div>
+    </div>
+</template>

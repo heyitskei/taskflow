@@ -4,7 +4,6 @@ import {createInertiaApp} from '@inertiajs/vue3'
 import {createVuetify} from 'vuetify';
 import 'vuetify/styles';
 import {aliases, mdi} from 'vuetify/iconsets/mdi';
-// import '@mdi/font/css/materialdesignicons.css';
 import 'vuetify/dist/vuetify.min.css'
 
 const vuetify = createVuetify({
@@ -29,4 +28,4 @@ createInertiaApp({
             .use(vuetify)
             .mount(el)
     },
-})
+});

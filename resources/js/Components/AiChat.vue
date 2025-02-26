@@ -1,62 +1,3 @@
-<template>
-    <div
-        class="h-full flex flex-col p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl">
-        <div class="flex-1 overflow-auto space-y-4 messages-container">
-            <div v-for="message in messages"
-                 :key="message.id"
-                 :class="[
-                     'max-w-[90%] rounded-lg p-3',
-                     message.isUser ?
-                         'bg-gray-100 dark:bg-gray-900 ml-auto border border-gray-200 dark:border-gray-700' :
-                         'bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700'
-                 ]"
-            >
-                <div class="text-sm text-gray-900 dark:text-gray-50">
-                    {{ message.content }}
-                </div>
-                <div class="text-xs mt-1 text-gray-600 dark:text-gray-400">
-                    {{ formatTime(message.timestamp) }}
-                </div>
-            </div>
-
-            <div v-if="isLoading"
-                 class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div
-                    class="animate-spin h-4 w-4 border-2 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full"></div>
-                <span class="text-sm text-gray-600 dark:text-gray-400">AI is thinking...</span>
-            </div>
-        </div>
-
-        <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div class="flex gap-2 items-end">
-                <textarea
-                    v-model="newMessage"
-                    class="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                           focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
-                           transition-all duration-200 resize-none bg-white dark:bg-gray-900
-                           text-sm text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400
-                           hover:border-gray-300 dark:hover:border-gray-500"
-                    placeholder="Ask your AI assistant..."
-                    rows="2"
-                    :disabled="isLoading"
-                    @keydown.enter.prevent="sendMessage"
-                ></textarea>
-                <button
-                    :disabled="!newMessage.trim() || isLoading"
-                    class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg
-                           hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] whitespace-nowrap
-                           disabled:opacity-50 disabled:cursor-not-allowed text-sm
-                           hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500
-                           dark:hover:from-blue-600 dark:hover:to-purple-600"
-                    @click="sendMessage"
-                >
-                    Send
-                </button>
-            </div>
-        </div>
-    </div>
-</template>
-
 <script setup>
 import {nextTick, ref, watch} from 'vue';
 import axios from "axios";
@@ -130,7 +71,6 @@ async function sendMessage() {
         emit('update:messages', newMessages);
 
         if (result.data.events && result.data.events.length > 0) {
-            console.log('Events received from API:', result.data.events);
             const updatedEvents = props.events.map(existingEvent => {
                 const updatedEvent = result.data.events.find(e => e.id === existingEvent.id);
                 return updatedEvent || existingEvent;
@@ -141,11 +81,9 @@ async function sendMessage() {
             );
 
             const finalEvents = [...updatedEvents, ...newEvents];
-            console.log('Emitting updated events:', finalEvents);
             emit('update:events', finalEvents);
         }
     } catch (error) {
-        console.error('AI Chat Error:', error);
         emit('update:messages', [...updatedMessages, {
             id: Date.now(),
             content: 'Sorry, I encountered an error. ' + (error.response?.data?.error || error.message || 'Please try again.'),
@@ -157,6 +95,65 @@ async function sendMessage() {
     }
 }
 </script>
+
+<template>
+    <div
+        class="h-full flex flex-col p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl">
+        <div class="flex-1 overflow-auto space-y-4 messages-container">
+            <div v-for="message in messages"
+                 :key="message.id"
+                 :class="[
+                     'max-w-[90%] rounded-lg p-3',
+                     message.isUser ?
+                         'bg-gray-100 dark:bg-gray-900 ml-auto border border-gray-200 dark:border-gray-700' :
+                         'bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700'
+                 ]"
+            >
+                <div class="text-sm text-gray-900 dark:text-gray-50">
+                    {{ message.content }}
+                </div>
+                <div class="text-xs mt-1 text-gray-600 dark:text-gray-400">
+                    {{ formatTime(message.timestamp) }}
+                </div>
+            </div>
+
+            <div v-if="isLoading"
+                 class="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div
+                    class="animate-spin h-4 w-4 border-2 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full"></div>
+                <span class="text-sm text-gray-600 dark:text-gray-400">AI is thinking...</span>
+            </div>
+        </div>
+
+        <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div class="flex gap-2 items-end">
+                <textarea
+                    v-model="newMessage"
+                    class="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                           focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent
+                           transition-all duration-200 resize-none bg-white dark:bg-gray-900
+                           text-sm text-gray-900 dark:text-gray-50 placeholder-gray-500 dark:placeholder-gray-400
+                           hover:border-gray-300 dark:hover:border-gray-500"
+                    placeholder="Ask your AI assistant..."
+                    rows="2"
+                    :disabled="isLoading"
+                    @keydown.enter.prevent="sendMessage"
+                ></textarea>
+                <button
+                    :disabled="!newMessage.trim() || isLoading"
+                    class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg
+                           hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] whitespace-nowrap
+                           disabled:opacity-50 disabled:cursor-not-allowed text-sm
+                           hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500
+                           dark:hover:from-blue-600 dark:hover:to-purple-600"
+                    @click="sendMessage"
+                >
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
 
 <style scoped>
 .messages-container {

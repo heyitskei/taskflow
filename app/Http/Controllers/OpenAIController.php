@@ -24,24 +24,24 @@ class OpenAIController extends Controller
     {
         try {
             $tools = [
-                [
-                    "type" => "function",
-                    "function" => [
-                        "name" => "fetch_news",
-                        "description" => "Fetch news for a user specified category",
-                        "parameters" => [
-                            "type" => "object",
-                            "properties" => [
-                                "category" => [
-                                    "type" => "string",
-                                    "description" => "A category for which to fetch news for a given category",
-                                ]
-                            ],
-                            "required" => ["category"],
-                            "additionalProperties" => false
-                        ],
-                    ]
-                ],
+//                [
+//                    "type" => "function",
+//                    "function" => [
+//                        "name" => "fetch_news",
+//                        "description" => "Fetch news for a user specified category",
+//                        "parameters" => [
+//                            "type" => "object",
+//                            "properties" => [
+//                                "category" => [
+//                                    "type" => "string",
+//                                    "description" => "A category for which to fetch news for a given category",
+//                                ]
+//                            ],
+//                            "required" => ["category"],
+//                            "additionalProperties" => false
+//                        ],
+//                    ]
+//                ],
                 [
                     "type" => "function",
                     "function" => [
